@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Laboratoire Cladistique & Taxonomie</title>
+  <title>Observatoire Taxonomique & Cladistique</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     :root {
       --bg-space: #07090e;
@@ -25,7 +26,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg-space);
       color: var(--text-main);
       height: 100vh;
@@ -34,7 +35,7 @@
       flex-direction: column;
     }
 
-    /* Barre supérieure de télémesure */
+    /* Barre supérieure */
     header {
       background: #0b0f17;
       border-bottom: 1px solid var(--border);
@@ -95,7 +96,7 @@
       color: var(--accent-cyan);
     }
 
-    /* Layout Cockpit 3 zones */
+    /* Corps du cockpit */
     .cockpit-body {
       flex: 1;
       display: flex;
@@ -103,7 +104,7 @@
       overflow: hidden;
     }
 
-    /* Volet gauche : Phylogénie & Filtres */
+    /* Volet gauche */
     aside.sidebar-left {
       width: 320px;
       background: var(--panel-bg);
@@ -132,7 +133,6 @@
       color: var(--text-main);
       font-size: 0.825rem;
       outline: none;
-      transition: border-color 0.2s;
     }
 
     .search-box input:focus { border-color: var(--border-focus); }
@@ -144,9 +144,7 @@
       font-size: 0.8rem;
     }
 
-    .tree-node {
-      margin-bottom: 0.25rem;
-    }
+    .tree-node { margin-bottom: 0.25rem; }
 
     .tree-label {
       display: flex;
@@ -157,18 +155,11 @@
       cursor: pointer;
       color: var(--text-muted);
       user-select: none;
-      transition: background 0.15s, color 0.15s;
     }
 
     .tree-label:hover {
       background: rgba(255, 255, 255, 0.04);
       color: var(--text-main);
-    }
-
-    .tree-label.active {
-      background: rgba(56, 189, 248, 0.12);
-      color: var(--accent-cyan);
-      font-weight: 600;
     }
 
     .tree-count {
@@ -188,33 +179,96 @@
 
     .tree-children.expanded { display: block; }
 
-    /* Zone centrale : Vue mosaïque */
+    /* Zone centrale */
     main.viewport-center {
       flex: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
       background: #080b11;
+      position: relative;
     }
 
     .subbar {
-      height: 42px;
+      height: 44px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 1.25rem;
+      padding: 0 1rem;
       font-size: 0.8rem;
       background: #0b1018;
+      z-index: 10;
     }
 
+    .view-modes {
+      display: flex;
+      background: #06090e;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .view-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .view-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+    }
+
+    .views-stack {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .view-pane {
+      position: absolute;
+      inset: 0;
+      display: none;
+    }
+
+    .view-pane.active { display: flex; flex-direction: column; }
+
+    /* Vue Sunburst */
+    #sunburstContainer {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .sunburst-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(11, 16, 24, 0.95);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: #fff;
+      display: none;
+      z-index: 50;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    /* Vue Mosaïque */
     .grid-container {
       flex: 1;
       overflow-y: auto;
       padding: 1.25rem;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      grid-auto-rows: 240px;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      grid-auto-rows: 230px;
       gap: 1rem;
     }
 
@@ -259,20 +313,16 @@
       font-weight: 700;
       padding: 0.15rem 0.4rem;
       border-radius: 3px;
-      backdrop-filter: blur(4px);
     }
 
     .card-info {
-      padding: 0.6rem;
+      padding: 0.55rem;
       background: #0e141e;
       border-top: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
     }
 
     .card-sci {
-      font-size: 0.8rem;
+      font-size: 0.775rem;
       font-weight: 600;
       font-style: italic;
       white-space: nowrap;
@@ -282,14 +332,20 @@
     }
 
     .card-vern {
-      font-size: 0.725rem;
+      font-size: 0.7rem;
       color: var(--text-dim);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* Volet droit : Fiche d'expertise naturaliste */
+    /* Vue Carte Globale */
+    #globalSatelliteMap {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Volet droit */
     aside.sidebar-right {
       width: 420px;
       background: var(--panel-bg);
@@ -307,9 +363,7 @@
       box-shadow: -8px 0 24px rgba(0,0,0,0.6);
     }
 
-    aside.sidebar-right.open {
-      transform: translateX(0);
-    }
+    aside.sidebar-right.open { transform: translateX(0); }
 
     .right-header {
       padding: 1rem;
@@ -325,7 +379,6 @@
       color: var(--text-dim);
       font-size: 1.25rem;
       cursor: pointer;
-      line-height: 1;
     }
 
     .close-btn:hover { color: #fff; }
@@ -348,11 +401,7 @@
       border: 1px solid var(--border);
     }
 
-    .hero-view img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .hero-view img { width: 100%; height: 100%; object-fit: cover; }
 
     .taxonomy-ladder {
       display: flex;
@@ -375,12 +424,6 @@
     .ladder-rank { color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; }
     .ladder-name { font-weight: 500; color: var(--accent-cyan); }
 
-    .actions-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
     .btn-action {
       background: #1e293b;
       border: 1px solid var(--border);
@@ -395,22 +438,14 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      transition: background 0.2s, border-color 0.2s;
+      transition: background 0.2s;
     }
 
-    .btn-action:hover {
-      background: #283548;
-      border-color: var(--accent-cyan);
-    }
-
+    .btn-action:hover { background: #283548; }
     .btn-action.primary {
       background: rgba(16, 185, 129, 0.15);
       border-color: rgba(16, 185, 129, 0.4);
       color: var(--accent-green);
-    }
-
-    .btn-action.primary:hover {
-      background: rgba(16, 185, 129, 0.25);
     }
 
     #specimenMap {
@@ -422,11 +457,10 @@
 </head>
 <body>
 
-  <!-- Télémesure haute -->
   <header>
     <div class="brand">
       <div class="brand-title">Taxa Laboratory</div>
-      <div class="brand-badge">Cladistique v2.0</div>
+      <div class="brand-badge">Cladistique v2.1</div>
     </div>
     <div class="metrics-bar">
       <div class="metric-item">
@@ -446,36 +480,59 @@
 
   <div class="cockpit-body">
 
-    <!-- Volet gauche : Exploration taxonomique -->
+    <!-- Volet gauche -->
     <aside class="sidebar-left">
       <div class="sidebar-header">
         <div class="search-box">
-          <input type="text" id="globalSearch" placeholder="Binôme latin, famille, nom commun..." />
+          <input type="text" id="globalSearch" placeholder="Binôme latin, famille, nom..." />
         </div>
         <div style="display: flex; gap: 0.5rem;">
           <button id="resetFilterBtn" class="btn-action" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem;">Réinitialiser</button>
-          <button id="onlyDriveBtn" class="btn-action primary" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem;">Photos Drive</button>
+          <button id="onlyDriveBtn" class="btn-action primary" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem;">Drive seul</button>
         </div>
       </div>
-      <div class="taxo-tree" id="taxoTree">
-        <!-- Arbre généré dynamiquement -->
-      </div>
+      <div class="taxo-tree" id="taxoTree"></div>
     </aside>
 
-    <!-- Zone centrale : Matrice des spécimens -->
+    <!-- Zone centrale polyvalente -->
     <main class="viewport-center">
       <div class="subbar">
+        <div class="view-modes">
+          <button class="view-btn active" onclick="switchView('sunburst')">Arbre radial (Sunburst)</button>
+          <button class="view-btn" onclick="switchView('grid')">Planches spécimens</button>
+          <button class="view-btn" onclick="switchView('map')">Carte satellite</button>
+        </div>
+
         <div id="filterStatus" style="color: var(--text-muted); font-size: 0.75rem;">Collection complète</div>
-        <div style="display: flex; gap: 0.75rem; align-items: center;">
+
+        <div id="gridPagination" style="display: none; gap: 0.5rem; align-items: center;">
           <span id="pageInfo" style="color: var(--text-dim); font-size: 0.75rem;"></span>
-          <button id="prevBtn" class="btn-action" style="padding: 0.25rem 0.6rem;">&lt;</button>
-          <button id="nextBtn" class="btn-action" style="padding: 0.25rem 0.6rem;">&gt;</button>
+          <button id="prevBtn" class="btn-action" style="padding: 0.2rem 0.5rem;">&lt;</button>
+          <button id="nextBtn" class="btn-action" style="padding: 0.2rem 0.5rem;">&gt;</button>
         </div>
       </div>
-      <div class="grid-container" id="matrixGrid"></div>
+
+      <div class="views-stack">
+        <!-- 1. Arbre Radial Sunburst -->
+        <div class="view-pane active" id="viewSunburst">
+          <div id="sunburstContainer">
+            <div class="sunburst-tooltip" id="sunburstTooltip"></div>
+          </div>
+        </div>
+
+        <!-- 2. Mosaïque -->
+        <div class="view-pane" id="viewGrid">
+          <div class="grid-container" id="matrixGrid"></div>
+        </div>
+
+        <!-- 3. Carte Globale -->
+        <div class="view-pane" id="viewMap">
+          <div id="globalSatelliteMap"></div>
+        </div>
+      </div>
     </main>
 
-    <!-- Volet droit : Expertise naturaliste détaillée -->
+    <!-- Volet droit -->
     <aside class="sidebar-right" id="expertPanel">
       <div class="right-header">
         <div>
@@ -491,9 +548,9 @@
           <span id="detailDriveTag" class="drive-indicator" style="display: none;">Dossier Drive lié</span>
         </div>
 
-        <div class="actions-panel">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
           <a id="detailDriveLink" href="#" target="_blank" class="btn-action primary" style="display: none;">
-            Ouvrir l'archive Google Drive
+            Ouvrir le dossier Google Drive
           </a>
           <button id="btnIsolateFamily" class="btn-action">
             Isoler tous les membres de cette famille
@@ -504,7 +561,7 @@
 
         <div>
           <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.4rem; letter-spacing: 0.05em;">
-            Coordonnées du relevé de terrain
+            Coordonnées du relevé
           </div>
           <div id="specimenMap"></div>
           <div id="detailLocText" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;"></div>
@@ -522,6 +579,7 @@
     const PAGE_SIZE = 60;
     let detailMap = null;
     let detailMarker = null;
+    let globalMap = null;
 
     // 1. Initialisation
     fetch('data.json')
@@ -535,19 +593,166 @@
 
         buildTaxonomyTree();
         applyFilter();
+        buildSunburst();
       })
       .catch(err => {
         console.error(err);
         document.getElementById('filterStatus').innerText = 'Erreur de lecture de data.json';
       });
 
-    // 2. Construction de l'arbre phylogénétique dynamique
+    // 2. Gestion des vues
+    function switchView(mode) {
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-pane').forEach(p => p.classList.remove('active'));
+
+      if (mode === 'sunburst') {
+        document.querySelectorAll('.view-btn')[0].classList.add('active');
+        document.getElementById('viewSunburst').classList.add('active');
+        document.getElementById('gridPagination').style.display = 'none';
+      } else if (mode === 'grid') {
+        document.querySelectorAll('.view-btn')[1].classList.add('active');
+        document.getElementById('viewGrid').classList.add('active');
+        document.getElementById('gridPagination').style.display = 'flex';
+        renderGrid();
+      } else if (mode === 'map') {
+        document.querySelectorAll('.view-btn')[2].classList.add('active');
+        document.getElementById('viewMap').classList.add('active');
+        document.getElementById('gridPagination').style.display = 'none';
+        initGlobalMap();
+      }
+    }
+
+    // 3. Arbre du Vivant Radiale (Sunburst D3.js)
+    function buildSunburst() {
+      const container = document.getElementById('sunburstContainer');
+      const width = Math.min(container.clientWidth, container.clientHeight, 760);
+      const radius = width / 6;
+
+      // Agrégation hiérarchique
+      const hierarchyData = { name: "Biota", children: [] };
+      const mapTree = {};
+
+      rawSpecies.forEach(sp => {
+        const k = sp.taxonomy.kingdom || 'Incertain';
+        const p = sp.taxonomy.phylum || 'Autre';
+        const c = sp.taxonomy.class || 'Classe indét.';
+        const o = sp.taxonomy.order || 'Ordre indét.';
+
+        if (!mapTree[k]) mapTree[k] = {};
+        if (!mapTree[k][p]) mapTree[k][p] = {};
+        if (!mapTree[k][p][c]) mapTree[k][p][c] = {};
+        mapTree[k][p][c][o] = (mapTree[k][p][c][o] || 0) + 1;
+      });
+
+      for (const k in mapTree) {
+        const kNode = { name: k, rank: 'kingdom', children: [] };
+        for (const p in mapTree[k]) {
+          const pNode = { name: p, rank: 'phylum', children: [] };
+          for (const c in mapTree[k][p]) {
+            const cNode = { name: c, rank: 'class', children: [] };
+            for (const o in mapTree[k][p][c]) {
+              cNode.children.push({ name: o, rank: 'order', value: mapTree[k][p][c][o] });
+            }
+            pNode.children.push(cNode);
+          }
+          kNode.children.push(pNode);
+        }
+        hierarchyData.children.push(kNode);
+      }
+
+      const color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, hierarchyData.children.length + 1));
+      const hierarchy = d3.hierarchy(hierarchyData)
+        .sum(d => d.value)
+        .sort((a, b) => b.value - a.value);
+
+      const root = d3.partition().size([2 * Math.PI, hierarchy.height + 1])(hierarchy);
+      root.each(d => d.current = d);
+
+      const arc = d3.arc()
+        .startAngle(d => d.x0)
+        .endAngle(d => d.x1)
+        .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+        .padRadius(radius * 1.5)
+        .innerRadius(d => d.y0 * radius)
+        .outerRadius(d => Math.max(d.y0 * radius, d.y1 * radius - 1));
+
+      d3.select("#sunburstContainer svg").remove();
+      const svg = d3.select("#sunburstContainer")
+        .append("svg")
+        .attr("viewBox", [-width / 2, -width / 2, width, width])
+        .style("font", "10px sans-serif");
+
+      const path = svg.append("g")
+        .selectAll("path")
+        .data(root.descendants().slice(1))
+        .join("path")
+        .attr("fill", d => { while (d.depth > 1) d = d.parent; return color(d.data.name); })
+        .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.75 : 0.45) : 0)
+        .attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+        .attr("d", d => arc(d.current));
+
+      const tooltip = document.getElementById('sunburstTooltip');
+
+      path.style("cursor", "pointer")
+        .on("mouseenter", (event, d) => {
+          tooltip.style.display = 'block';
+          tooltip.innerHTML = `<strong>${d.data.name}</strong><br>${d.value} espèces répertoriées`;
+        })
+        .on("mousemove", (event) => {
+          tooltip.style.left = (event.clientX + 14) + 'px';
+          tooltip.style.top = (event.clientY + 14) + 'px';
+        })
+        .on("mouseleave", () => { tooltip.style.display = 'none'; })
+        .on("click", clicked);
+
+      const parent = svg.append("circle")
+        .datum(root)
+        .attr("r", radius)
+        .attr("fill", "transparent")
+        .attr("pointer-events", "all")
+        .style("cursor", "pointer")
+        .on("click", clicked);
+
+      function clicked(event, p) {
+        parent.datum(p.parent || root);
+
+        if (p.data.rank && p.data.name) {
+          setFilter(p.data.rank, p.data.name);
+        }
+
+        root.each(d => d.target = {
+          x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+          x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+          y0: Math.max(0, d.y0 - p.depth),
+          y1: Math.max(0, d.y1 - p.depth)
+        });
+
+        const t = svg.transition().duration(750);
+
+        path.transition(t)
+          .tween("data", d => {
+            const i = d3.interpolate(d.current, d.target);
+            return t => d.current = i(t);
+          })
+          .filter(function(d) {
+            return +this.getAttribute("fill-opacity") || arcVisible(d.target);
+          })
+          .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.75 : 0.45) : 0)
+          .attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
+          .attrTween("d", d => () => arc(d.current));
+      }
+
+      function arcVisible(d) {
+        return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
+      }
+    }
+
+    // 4. Arbre taxonomique de gauche
     function buildTaxonomyTree() {
       const treeContainer = document.getElementById('taxoTree');
       treeContainer.innerHTML = '';
-
-      // Regroupement hiérarchique : Phylum -> Class -> Order
       const tree = {};
+
       rawSpecies.forEach(sp => {
         const phylum = sp.taxonomy.phylum || 'Non classé';
         const cls = sp.taxonomy.class || 'Classe indéterminée';
@@ -555,15 +760,12 @@
 
         if (!tree[phylum]) tree[phylum] = { count: 0, classes: {} };
         tree[phylum].count++;
-
         if (!tree[phylum].classes[cls]) tree[phylum].classes[cls] = { count: 0, orders: {} };
         tree[phylum].classes[cls].count++;
-
         if (!tree[phylum].classes[cls].orders[ord]) tree[phylum].classes[cls].orders[ord] = 0;
         tree[phylum].classes[cls].orders[ord]++;
       });
 
-      // Rendu HTML récursif
       Object.keys(tree).sort().forEach(phylum => {
         const phylumNode = createNode(phylum, 'phylum', tree[phylum].count);
         const pChildren = document.createElement('div');
@@ -591,18 +793,14 @@
     function createNode(title, rank, count) {
       const div = document.createElement('div');
       div.className = 'tree-node';
-
       const label = document.createElement('div');
       label.className = 'tree-label';
       label.innerHTML = `<span>${title}</span> <span class="tree-count">${count}</span>`;
 
       label.onclick = (e) => {
         e.stopPropagation();
-        // Déplier/Replier
         const children = div.querySelector('.tree-children');
         if (children) children.classList.toggle('expanded');
-
-        // Filtrer
         setFilter(rank, title);
       };
 
@@ -610,7 +808,7 @@
       return div;
     }
 
-    // 3. Filtrage dynamique
+    // 5. Filtrage
     function setFilter(rank, value) {
       currentFilter.rank = rank;
       currentFilter.value = value;
@@ -619,7 +817,6 @@
 
     function applyFilter() {
       filteredList = rawSpecies.filter(sp => {
-        // Recherche texte
         if (currentFilter.query) {
           const q = currentFilter.query.toLowerCase();
           const matchSci = sp.scientific_name.toLowerCase().includes(q);
@@ -628,20 +825,19 @@
           if (!matchSci && !matchVern && !matchFam) return false;
         }
 
-        // Filtre de rang taxonomique
         if (currentFilter.rank && currentFilter.value) {
           if (sp.taxonomy[currentFilter.rank] !== currentFilter.value) return false;
         }
 
-        // Filtre Drive uniquement
         if (currentFilter.driveOnly && !sp.drive_folder_id) return false;
-
         return true;
       });
 
       page = 1;
-      renderGrid();
       updateSubbar();
+      if (document.getElementById('viewGrid').classList.contains('active')) {
+        renderGrid();
+      }
     }
 
     function updateSubbar() {
@@ -650,7 +846,7 @@
       document.getElementById('filterStatus').innerText = `${label} (${filteredList.length} espèces)`;
     }
 
-    // 4. Rendu de la grille virtuelle
+    // 6. Vue Planches / Mosaïque
     function renderGrid() {
       const container = document.getElementById('matrixGrid');
       container.innerHTML = '';
@@ -684,7 +880,42 @@
       container.scrollTop = 0;
     }
 
-    // 5. Volet droit d'expertise naturaliste
+    // 7. Vue Carte Satellite Globale
+    function initGlobalMap() {
+      setTimeout(() => {
+        if (!globalMap) {
+          globalMap = L.map('globalSatelliteMap').setView([42.5, 9.3], 5);
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+          }).addTo(globalMap);
+        }
+
+        // Nettoyer les anciens marqueurs
+        globalMap.eachLayer(layer => {
+          if (layer instanceof L.CircleMarker) globalMap.removeLayer(layer);
+        });
+
+        // Placer les points géolocalisés du filtre en cours
+        filteredList.forEach(sp => {
+          if (sp.coordinates && sp.coordinates.lat && sp.coordinates.lng) {
+            const circle = L.circleMarker([sp.coordinates.lat, sp.coordinates.lng], {
+              radius: 4,
+              fillColor: '#38bdf8',
+              color: '#fff',
+              weight: 0.5,
+              opacity: 0.8,
+              fillOpacity: 0.7
+            }).addTo(globalMap);
+
+            circle.on('click', () => openExpertPanel(sp));
+          }
+        });
+
+        globalMap.invalidateSize();
+      }, 100);
+    }
+
+    // 8. Fiche d'expertise droite
     function openExpertPanel(sp) {
       const panel = document.getElementById('expertPanel');
       panel.classList.add('open');
@@ -693,7 +924,6 @@
       document.getElementById('detailVernName').innerText = sp.common_name || 'Nom commun non renseigné';
       document.getElementById('detailImg').src = sp.photo_url || '';
 
-      // Bouton & tag Drive
       const driveLink = document.getElementById('detailDriveLink');
       const driveTag = document.getElementById('detailDriveTag');
       if (sp.drive_folder_id) {
@@ -705,20 +935,19 @@
         driveTag.style.display = 'none';
       }
 
-      // Bouton isoler la famille
       const isolateBtn = document.getElementById('btnIsolateFamily');
       if (sp.taxonomy.family) {
         isolateBtn.innerText = `Isoler la famille ${sp.taxonomy.family}`;
         isolateBtn.style.display = 'block';
         isolateBtn.onclick = () => {
           setFilter('family', sp.taxonomy.family);
+          switchView('grid');
           closeExpertPanel();
         };
       } else {
         isolateBtn.style.display = 'none';
       }
 
-      // Échelle taxonomique
       const ladder = document.getElementById('detailLadder');
       ladder.innerHTML = '';
       const ranks = [
@@ -740,7 +969,6 @@
         }
       });
 
-      // Cartographie satellite ESRI / Leaflet
       document.getElementById('detailLocText').innerText = 
         `${sp.place || 'Lieu-dit non renseigné'} • Date : ${sp.last_observed || 'Non daté'}`;
 
@@ -768,7 +996,7 @@
       document.getElementById('expertPanel').classList.remove('open');
     }
 
-    // Événements d'interface
+    // Événements
     document.getElementById('globalSearch').addEventListener('input', (e) => {
       currentFilter.query = e.target.value.trim();
       applyFilter();
