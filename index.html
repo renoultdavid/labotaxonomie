@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratoire de Taxonomie & Biodiversité</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0f141c;
+      --card-bg: #1a2230;
+      --card-hover: #222d40;
+      --accent: #22c55e;
+      --accent-hover: #16a34a;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #2d3748;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* En-tête de navigation */
+    header {
+      background: rgba(15, 20, 28, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title-area h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    .title-area p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    input[type="text"], select {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    button.btn {
+      background: var(--accent);
+      color: #052e16;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button.btn:hover { background: var(--accent-hover); }
+
+    /* Grille de vignettes */
+    main {
+      flex: 1;
+      padding: 1.5rem;
+      max-width: 1800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      background: var(--card-hover);
+    }
+
+    .card-img-wrap {
+      aspect-ratio: 4/3;
+      background: #090d13;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-badge {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: rgba(0,0,0,0.65);
+      padding: 0.2rem 0.5rem;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      backdrop-filter: blur(4px);
+    }
+
+    .card-body {
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .sci-name {
+      font-weight: 600;
+      font-style: italic;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .vern-name {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .family-tag {
+      font-size: 0.7rem;
+      color: var(--accent);
+      margin-top: 0.25rem;
+    }
+
+    /* Pagination */
+    .pagination-bar {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      align-items: center;
+      padding: 2rem 0;
+    }
+
+    /* Modale Fiche Espèce & Statistiques */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 900px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1.25rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .species-hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .species-hero { grid-template-columns: 1fr; }
+    }
+
+    .species-photo {
+      width: 100%;
+      border-radius: 8px;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      border: 1px solid var(--border);
+    }
+
+    #speciesMap {
+      height: 240px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-top: 1rem;
+    }
+
+    .taxo-crumbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin: 1rem 0;
+      font-size: 0.8rem;
+    }
+
+    .crumb {
+      background: #111827;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .chart-container {
+      position: relative;
+      height: 320px;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title-area">
+      <h1>Observatoire Taxonomique</h1>
+      <p id="totalSummary">Chargement de la collection...</p>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Rechercher une espèce, un genre..." />
+      <select id="phylumSelect"><option value="">Tous les embranchements</option></select>
+      <select id="classSelect"><option value="">Toutes les classes</option></select>
+      <select id="orderSelect"><option value="">Tous les ordres</option></select>
+      <button class="btn" id="openStatsBtn">Statistiques</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid" id="speciesGrid"></div>
+    <div class="pagination-bar">
+      <button class="btn" id="prevPageBtn">Précédent</button>
+      <span id="pageIndicator" style="font-size: 0.9rem; color: var(--text-muted);">Page 1</span>
+      <button class="btn" id="nextPageBtn">Suivant</button>
+    </div>
+  </main>
+
+  <!-- Modale Détails Espèce -->
+  <div class="modal" id="speciesModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeSpeciesModal()">&times;</button>
+      <h2 id="modalSciName" style="font-style: italic; font-size: 1.5rem;"></h2>
+      <p id="modalVernName" style="color: var(--text-muted); font-size: 1rem; margin-bottom: 0.5rem;"></p>
+
+      <div class="taxo-crumbs" id="modalTaxoCrumbs"></div>
+
+      <div class="species-hero">
+        <div>
+          <img id="modalImg" class="species-photo" src="" alt="Photo" />
+          <div style="margin-top: 0.75rem;">
+            <a id="modalDriveBtn" href="#" target="_blank" class="btn" style="text-decoration: none; display: inline-block;">
+              Accéder au dossier Google Drive
+            </a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 0.875rem; line-height: 1.6;">
+            <p><strong>Lieu :</strong> <span id="modalPlace">-</span></p>
+            <p><strong>Dernière observation :</strong> <span id="modalDate">-</span></p>
+            <p><strong>Nombre total de relevés :</strong> <span id="modalObsCount">-</span></p>
+          </div>
+          <div id="speciesMap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Statistiques -->
+  <div class="modal" id="statsModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeStatsModal()">&times;</button>
+      <h2>Laboratoire de Statistiques</h2>
+      <p style="color: var(--text-muted); font-size: 0.85rem;">Analyse dynamique des spécimens de la collection</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0;">
+        <div style="background: #111827; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="color: var(--text-muted); font-size: 0.75rem;">TOTAL ESPÈCES</div>
+          <div id="statTotalSpecies" style="font-size: 1.75rem; font-weight: 700; color: var(--accent);">-</div>
+        </div>
+        <div style="background: #111827; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="color: var(--text-muted); font-size: 0.75rem;">COUVERTURE DRIVE</div>
+          <div id="statDriveCoverage" style="font-size: 1.75rem; font-weight: 700;">-</div>
+        </div>
+        <div style="background: #111827; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="color: var(--text-muted); font-size: 0.75rem;">ORDRES REPRÉSENTÉS</div>
+          <div id="statTotalOrders" style="font-size: 1.75rem; font-weight: 700;">-</div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="familyChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allData = [];
+    let filteredData = [];
+    let currentPage = 1;
+    const PAGE_SIZE = 48;
+    let map = null;
+    let marker = null;
+    let statsChart = null;
+
+    // Chargement des données
+    fetch('data.json')
+      .then(res => res.json())
+      .then(data => {
+        allData = data;
+        filteredData = data;
+        initFilters();
+        renderGrid();
+        updateSummary();
+      })
+      .catch(err => {
+        document.getElementById('totalSummary').innerText = 'Erreur lors du chargement de data.json';
+        console.error(err);
+      });
+
+    function updateSummary() {
+      document.getElementById('totalSummary').innerText = 
+        `${filteredData.length.toLocaleString('fr-FR')} espèces affichées sur ${allData.length.toLocaleString('fr-FR')} indexées`;
+    }
+
+    function initFilters() {
+      const phylums = [...new Set(allData.map(d => d.taxonomy.phylum).filter(Boolean))].sort();
+      const classes = [...new Set(allData.map(d => d.taxonomy.class).filter(Boolean))].sort();
+      const orders = [...new Set(allData.map(d => d.taxonomy.order).filter(Boolean))].sort();
+
+      populateSelect('phylumSelect', phylums);
+      populateSelect('classSelect', classes);
+      populateSelect('orderSelect', orders);
+
+      document.getElementById('searchInput').addEventListener('input', applyFilters);
+      document.getElementById('phylumSelect').addEventListener('change', applyFilters);
+      document.getElementById('classSelect').addEventListener('change', applyFilters);
+      document.getElementById('orderSelect').addEventListener('change', applyFilters);
+
+      document.getElementById('prevPageBtn').addEventListener('click', () => {
+        if (currentPage > 1) { currentPage--; renderGrid(); }
+      });
+      document.getElementById('nextPageBtn').addEventListener('click', () => {
+        if (currentPage * PAGE_SIZE < filteredData.length) { currentPage++; renderGrid(); }
+      });
+
+      document.getElementById('openStatsBtn').addEventListener('click', openStatsModal);
+    }
+
+    function populateSelect(id, items) {
+      const select = document.getElementById(id);
+      items.forEach(it => {
+        const opt = document.createElement('option');
+        opt.value = it;
+        opt.innerText = it;
+        select.appendChild(opt);
+      });
+    }
+
+    function applyFilters() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const phylum = document.getElementById('phylumSelect').value;
+      const cls = document.getElementById('classSelect').value;
+      const order = document.getElementById('orderSelect').value;
+
+      filteredData = allData.filter(d => {
+        const matchesQuery = !query || 
+          d.scientific_name.toLowerCase().includes(query) || 
+          (d.common_name && d.common_name.toLowerCase().includes(query)) ||
+          (d.taxonomy.family && d.taxonomy.family.toLowerCase().includes(query));
+
+        const matchesPhylum = !phylum || d.taxonomy.phylum === phylum;
+        const matchesClass = !cls || d.taxonomy.class === cls;
+        const matchesOrder = !order || d.taxonomy.order === order;
+
+        return matchesQuery && matchesPhylum && matchesClass && matchesOrder;
+      });
+
+      currentPage = 1;
+      renderGrid();
+      updateSummary();
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('speciesGrid');
+      grid.innerHTML = '';
+
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const paged = filteredData.slice(start, start + PAGE_SIZE);
+
+      paged.forEach(esp => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.onclick = () => openSpeciesModal(esp);
+
+        const imgUrl = esp.photo_url || 'https://via.placeholder.com/400x300?text=Pas+de+visuel';
+
+        card.innerHTML = `
+          <div class="card-img-wrap">
+            <img src="${imgUrl}" alt="${esp.scientific_name}" loading="lazy">
+            <span class="card-badge">${esp.obs_count} obs.</span>
+          </div>
+          <div class="card-body">
+            <div class="sci-name">${esp.scientific_name}</div>
+            <div class="vern-name">${esp.common_name || '—'}</div>
+            <div class="family-tag">${esp.taxonomy.family || esp.taxonomy.order || ''}</div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('pageIndicator').innerText = 
+        `Page ${currentPage} sur ${Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE))}`;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openSpeciesModal(esp) {
+      document.getElementById('modalSciName').innerText = esp.scientific_name;
+      document.getElementById('modalVernName').innerText = esp.common_name || 'Nom vernaculaire non renseigné';
+      document.getElementById('modalImg').src = esp.photo_url || '';
+      document.getElementById('modalPlace').innerText = esp.place || 'Lieu non renseigné';
+      document.getElementById('modalDate').innerText = esp.last_observed || 'Non datée';
+      document.getElementById('modalObsCount').innerText = esp.obs_count;
+
+      // Taxonomie cliquable / fil d'Ariane
+      const crumbs = document.getElementById('modalTaxoCrumbs');
+      crumbs.innerHTML = '';
+      const taxRanks = ['kingdom', 'phylum', 'class', 'order', 'family', 'subfamily', 'genus'];
+      taxRanks.forEach(r => {
+        if (esp.taxonomy[r]) {
+          const c = document.createElement('span');
+          c.className = 'crumb';
+          c.innerText = esp.taxonomy[r];
+          crumbs.appendChild(c);
+        }
+      });
+
+      // Lien Drive
+      const driveBtn = document.getElementById('modalDriveBtn');
+      if (esp.drive_folder_id) {
+        driveBtn.href = `https://drive.google.com/drive/folders/${esp.drive_folder_id}`;
+        driveBtn.style.display = 'inline-block';
+      } else {
+        driveBtn.style.display = 'none';
+      }
+
+      document.getElementById('speciesModal').classList.add('active');
+
+      // Carte Leaflet
+      setTimeout(() => {
+        if (!map) {
+          map = L.map('speciesMap');
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+          }).addTo(map);
+        }
+        if (esp.coordinates && esp.coordinates.lat && esp.coordinates.lng) {
+          const pos = [esp.coordinates.lat, esp.coordinates.lng];
+          map.setView(pos, 10);
+          if (marker) map.removeLayer(marker);
+          marker = L.marker(pos).addTo(map);
+          document.getElementById('speciesMap').style.display = 'block';
+        } else {
+          document.getElementById('speciesMap').style.display = 'none';
+        }
+        map.invalidateSize();
+      }, 200);
+    }
+
+    function closeSpeciesModal() {
+      document.getElementById('speciesModal').classList.remove('active');
+    }
+
+    function openStatsModal() {
+      document.getElementById('statsModal').classList.add('active');
+      document.getElementById('statTotalSpecies').innerText = allData.length.toLocaleString('fr-FR');
+      
+      const driveLinked = allData.filter(d => d.drive_folder_id).length;
+      document.getElementById('statDriveCoverage').innerText = `${Math.round((driveLinked / allData.length) * 100)} %`;
+
+      const orders = [...new Set(allData.map(d => d.taxonomy.order).filter(Boolean))];
+      document.getElementById('statTotalOrders').innerText = orders.length;
+
+      // Calcul des 12 familles dominantes
+      const familyCounts = {};
+      allData.forEach(d => {
+        const fam = d.taxonomy.family;
+        if (fam) familyCounts[fam] = (familyCounts[fam] || 0) + 1;
+      });
+
+      const sortedFamilies = Object.entries(familyCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 12);
+
+      const labels = sortedFamilies.map(f => f[0]);
+      const dataPoints = sortedFamilies.map(f => f[1]);
+
+      if (statsChart) statsChart.destroy();
+      const ctx = document.getElementById('familyChart').getContext('2d');
+      statsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Nombre d'espèces",
+            data: dataPoints,
+            backgroundColor: '#22c55e',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+            y: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } }
+          }
+        }
+      });
+    }
+
+    function closeStatsModal() {
+      document.getElementById('statsModal').classList.remove('active');
+    }
+  </script>
+</body>
+</html>
