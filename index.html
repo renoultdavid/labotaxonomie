@@ -10,11 +10,10 @@
   <style>
     :root {
       --bg-space: #07090e;
-      --panel-bg: rgba(13, 17, 24, 0.94);
+      --panel-bg: rgba(13, 17, 24, 0.96);
       --card-bg: #111822;
-      --card-hover: #172231;
+      --card-hover: #1b2636;
       --border: #1f2937;
-      --border-focus: #38bdf8;
       --accent-cyan: #38bdf8;
       --accent-green: #10b981;
       --accent-amber: #f59e0b;
@@ -39,12 +38,13 @@
     header {
       background: #0b0f17;
       border-bottom: 1px solid var(--border);
-      height: 52px;
+      height: 54px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 1rem;
+      padding: 0 1.25rem;
       z-index: 100;
+      flex-shrink: 0;
     }
 
     .brand {
@@ -87,7 +87,6 @@
       font-size: 0.65rem;
       text-transform: uppercase;
       color: var(--text-dim);
-      letter-spacing: 0.05em;
     }
 
     .metric-value {
@@ -96,7 +95,40 @@
       color: var(--accent-cyan);
     }
 
-    /* Corps du cockpit */
+    /* Barre de raccourcis visuels */
+    .quick-bar {
+      background: #0a0e16;
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 1rem;
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .quick-tag {
+      background: #111823;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.3rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s;
+    }
+
+    .quick-tag:hover, .quick-tag.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-cyan);
+      color: #fff;
+    }
+
+    /* Corps de l'application */
     .cockpit-body {
       flex: 1;
       display: flex;
@@ -113,7 +145,6 @@
       flex-direction: column;
       flex-shrink: 0;
       z-index: 20;
-      backdrop-filter: blur(12px);
     }
 
     .sidebar-header {
@@ -135,8 +166,6 @@
       outline: none;
     }
 
-    .search-box input:focus { border-color: var(--border-focus); }
-
     .taxo-tree {
       flex: 1;
       overflow-y: auto;
@@ -157,10 +186,8 @@
       user-select: none;
     }
 
-    .tree-label:hover {
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--text-main);
-    }
+    .tree-label:hover { background: rgba(255, 255, 255, 0.04); color: var(--text-main); }
+    .tree-label.selected { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); font-weight: 600; }
 
     .tree-count {
       font-size: 0.7rem;
@@ -238,13 +265,27 @@
 
     .view-pane.active { display: flex; flex-direction: column; }
 
-    /* Vue Sunburst */
+    /* Diagramme Sunburst */
     #sunburstContainer {
       flex: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       position: relative;
+    }
+
+    .sunburst-nav-hint {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      background: rgba(11, 16, 24, 0.8);
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      pointer-events: none;
     }
 
     .sunburst-tooltip {
@@ -258,10 +299,9 @@
       color: #fff;
       display: none;
       z-index: 50;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
 
-    /* Vue Mosaïque */
+    /* Mosaïque */
     .grid-container {
       flex: 1;
       overflow-y: auto;
@@ -339,15 +379,38 @@
       text-overflow: ellipsis;
     }
 
-    /* Vue Carte Globale */
-    #globalSatelliteMap {
+    /* Carte globale */
+    #globalSatelliteMap { width: 100%; height: 100%; }
+
+    /* Popups personnalisés sur la carte */
+    .leaflet-popup-content-wrapper {
+      background: #0d121c !important;
+      color: #fff !important;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0;
+      overflow: hidden;
+    }
+    .leaflet-popup-content { margin: 0 !important; width: 220px !important; }
+    .map-popup-thumb { width: 100%; height: 120px; object-fit: cover; display: block; }
+    .map-popup-body { padding: 0.6rem; }
+    .map-popup-title { font-style: italic; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.2rem; }
+    .map-popup-vern { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.4rem; }
+    .map-popup-btn {
       width: 100%;
-      height: 100%;
+      background: var(--accent-cyan);
+      color: #042436;
+      border: none;
+      padding: 0.35rem 0;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
     }
 
-    /* Volet droit */
+    /* Volet droit d'expertise : z-index 2000 pour couvrir la carte */
     aside.sidebar-right {
-      width: 420px;
+      width: 440px;
       background: var(--panel-bg);
       border-left: 1px solid var(--border);
       display: flex;
@@ -358,9 +421,9 @@
       top: 0;
       bottom: 0;
       right: 0;
-      z-index: 30;
+      z-index: 2000;
       backdrop-filter: blur(16px);
-      box-shadow: -8px 0 24px rgba(0,0,0,0.6);
+      box-shadow: -10px 0 30px rgba(0,0,0,0.8);
     }
 
     aside.sidebar-right.open { transform: translateX(0); }
@@ -377,10 +440,10 @@
       background: transparent;
       border: none;
       color: var(--text-dim);
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       cursor: pointer;
+      line-height: 1;
     }
-
     .close-btn:hover { color: #fff; }
 
     .right-content {
@@ -400,7 +463,6 @@
       background: #000;
       border: 1px solid var(--border);
     }
-
     .hero-view img { width: 100%; height: 100%; object-fit: cover; }
 
     .taxonomy-ladder {
@@ -420,7 +482,6 @@
       padding: 0.15rem 0;
       border-bottom: 1px solid rgba(255,255,255,0.03);
     }
-
     .ladder-rank { color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; }
     .ladder-name { font-weight: 500; color: var(--accent-cyan); }
 
@@ -438,9 +499,7 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      transition: background 0.2s;
     }
-
     .btn-action:hover { background: #283548; }
     .btn-action.primary {
       background: rgba(16, 185, 129, 0.15);
@@ -449,7 +508,7 @@
     }
 
     #specimenMap {
-      height: 190px;
+      height: 200px;
       border-radius: 6px;
       border: 1px solid var(--border);
     }
@@ -460,7 +519,7 @@
   <header>
     <div class="brand">
       <div class="brand-title">Taxa Laboratory</div>
-      <div class="brand-badge">Cladistique v2.1</div>
+      <div class="brand-badge">Cladistique v2.2</div>
     </div>
     <div class="metrics-bar">
       <div class="metric-item">
@@ -478,17 +537,30 @@
     </div>
   </header>
 
+  <!-- Raccourcis visuels grand public -->
+  <div class="quick-bar">
+    <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); margin-right: 0.25rem;">Groupes clés :</span>
+    <button class="quick-tag" onclick="quickFilter('Lepidoptera', 'order')">🦋 Papillons</button>
+    <button class="quick-tag" onclick="quickFilter('Coleoptera', 'order')">🪲 Coléoptères</button>
+    <button class="quick-tag" onclick="quickFilter('Araneae', 'order')">🕷️ Araignées</button>
+    <button class="quick-tag" onclick="quickFilter('Odonata', 'order')">🪰 Libellules</button>
+    <button class="quick-tag" onclick="quickFilter('Aves', 'class')">🦅 Oiseaux</button>
+    <button class="quick-tag" onclick="quickFilter('Plantae', 'kingdom')">🌿 Flore</button>
+    <button class="quick-tag" onclick="quickFilter('Fungi', 'kingdom')">🍄 Champignons</button>
+    <button class="quick-tag" onclick="quickFilter('Reptilia', 'class')">🦎 Reptiles</button>
+  </div>
+
   <div class="cockpit-body">
 
     <!-- Volet gauche -->
     <aside class="sidebar-left">
       <div class="sidebar-header">
         <div class="search-box">
-          <input type="text" id="globalSearch" placeholder="Binôme latin, famille, nom..." />
+          <input type="text" id="globalSearch" placeholder="Rechercher par binôme latin, nom vernaculaire..." />
         </div>
         <div style="display: flex; gap: 0.5rem;">
           <button id="resetFilterBtn" class="btn-action" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem;">Réinitialiser</button>
-          <button id="onlyDriveBtn" class="btn-action primary" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem;">Drive seul</button>
+          <button id="onlyDriveBtn" class="btn-action primary" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem;">Dossiers Drive</button>
         </div>
       </div>
       <div class="taxo-tree" id="taxoTree"></div>
@@ -498,14 +570,14 @@
     <main class="viewport-center">
       <div class="subbar">
         <div class="view-modes">
-          <button class="view-btn active" onclick="switchView('sunburst')">Arbre radial (Sunburst)</button>
-          <button class="view-btn" onclick="switchView('grid')">Planches spécimens</button>
+          <button class="view-btn active" onclick="switchView('grid')">Planches spécimens</button>
+          <button class="view-btn" onclick="switchView('sunburst')">Arbre radial</button>
           <button class="view-btn" onclick="switchView('map')">Carte satellite</button>
         </div>
 
         <div id="filterStatus" style="color: var(--text-muted); font-size: 0.75rem;">Collection complète</div>
 
-        <div id="gridPagination" style="display: none; gap: 0.5rem; align-items: center;">
+        <div id="gridPagination" style="display: flex; gap: 0.5rem; align-items: center;">
           <span id="pageInfo" style="color: var(--text-dim); font-size: 0.75rem;"></span>
           <button id="prevBtn" class="btn-action" style="padding: 0.2rem 0.5rem;">&lt;</button>
           <button id="nextBtn" class="btn-action" style="padding: 0.2rem 0.5rem;">&gt;</button>
@@ -513,16 +585,17 @@
       </div>
 
       <div class="views-stack">
-        <!-- 1. Arbre Radial Sunburst -->
-        <div class="view-pane active" id="viewSunburst">
-          <div id="sunburstContainer">
-            <div class="sunburst-tooltip" id="sunburstTooltip"></div>
-          </div>
+        <!-- 1. Mosaïque active par défaut (plus de page vide) -->
+        <div class="view-pane active" id="viewGrid">
+          <div class="grid-container" id="matrixGrid"></div>
         </div>
 
-        <!-- 2. Mosaïque -->
-        <div class="view-pane" id="viewGrid">
-          <div class="grid-container" id="matrixGrid"></div>
+        <!-- 2. Arbre Radial Sunburst -->
+        <div class="view-pane" id="viewSunburst">
+          <div id="sunburstContainer">
+            <div class="sunburst-nav-hint">Cliquez sur un secteur pour zoomer et filtrer les fiches. Cliquez au centre pour dézoomer.</div>
+            <div class="sunburst-tooltip" id="sunburstTooltip"></div>
+          </div>
         </div>
 
         <!-- 3. Carte Globale -->
@@ -532,7 +605,7 @@
       </div>
     </main>
 
-    <!-- Volet droit -->
+    <!-- Volet droit d'expertise -->
     <aside class="sidebar-right" id="expertPanel">
       <div class="right-header">
         <div>
@@ -580,8 +653,8 @@
     let detailMap = null;
     let detailMarker = null;
     let globalMap = null;
+    let markersLayer = null;
 
-    // 1. Initialisation
     fetch('data.json')
       .then(res => res.json())
       .then(data => {
@@ -597,23 +670,31 @@
       })
       .catch(err => {
         console.error(err);
-        document.getElementById('filterStatus').innerText = 'Erreur de lecture de data.json';
+        document.getElementById('filterStatus').innerText = 'Erreur lors de la lecture de data.json';
       });
 
-    // 2. Gestion des vues
+    function quickFilter(value, rank) {
+      document.querySelectorAll('.quick-tag').forEach(t => t.classList.remove('active'));
+      const activeBtn = Array.from(document.querySelectorAll('.quick-tag')).find(b => b.innerText.includes(value));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      setFilter(rank, value);
+      switchView('grid');
+    }
+
     function switchView(mode) {
       document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.view-pane').forEach(p => p.classList.remove('active'));
 
-      if (mode === 'sunburst') {
+      if (mode === 'grid') {
         document.querySelectorAll('.view-btn')[0].classList.add('active');
-        document.getElementById('viewSunburst').classList.add('active');
-        document.getElementById('gridPagination').style.display = 'none';
-      } else if (mode === 'grid') {
-        document.querySelectorAll('.view-btn')[1].classList.add('active');
         document.getElementById('viewGrid').classList.add('active');
         document.getElementById('gridPagination').style.display = 'flex';
         renderGrid();
+      } else if (mode === 'sunburst') {
+        document.querySelectorAll('.view-btn')[1].classList.add('active');
+        document.getElementById('viewSunburst').classList.add('active');
+        document.getElementById('gridPagination').style.display = 'none';
       } else if (mode === 'map') {
         document.querySelectorAll('.view-btn')[2].classList.add('active');
         document.getElementById('viewMap').classList.add('active');
@@ -622,38 +703,30 @@
       }
     }
 
-    // 3. Arbre du Vivant Radiale (Sunburst D3.js)
     function buildSunburst() {
       const container = document.getElementById('sunburstContainer');
-      const width = Math.min(container.clientWidth, container.clientHeight, 760);
+      const width = Math.min(container.clientWidth || 600, container.clientHeight || 600, 720);
       const radius = width / 6;
 
-      // Agrégation hiérarchique
       const hierarchyData = { name: "Biota", children: [] };
       const mapTree = {};
 
       rawSpecies.forEach(sp => {
         const k = sp.taxonomy.kingdom || 'Incertain';
         const p = sp.taxonomy.phylum || 'Autre';
-        const c = sp.taxonomy.class || 'Classe indét.';
         const o = sp.taxonomy.order || 'Ordre indét.';
 
         if (!mapTree[k]) mapTree[k] = {};
         if (!mapTree[k][p]) mapTree[k][p] = {};
-        if (!mapTree[k][p][c]) mapTree[k][p][c] = {};
-        mapTree[k][p][c][o] = (mapTree[k][p][c][o] || 0) + 1;
+        mapTree[k][p][o] = (mapTree[k][p][o] || 0) + 1;
       });
 
       for (const k in mapTree) {
         const kNode = { name: k, rank: 'kingdom', children: [] };
         for (const p in mapTree[k]) {
           const pNode = { name: p, rank: 'phylum', children: [] };
-          for (const c in mapTree[k][p]) {
-            const cNode = { name: c, rank: 'class', children: [] };
-            for (const o in mapTree[k][p][c]) {
-              cNode.children.push({ name: o, rank: 'order', value: mapTree[k][p][c][o] });
-            }
-            pNode.children.push(cNode);
+          for (const o in mapTree[k][p]) {
+            pNode.children.push({ name: o, rank: 'order', value: mapTree[k][p][o] });
           }
           kNode.children.push(pNode);
         }
@@ -687,7 +760,7 @@
         .data(root.descendants().slice(1))
         .join("path")
         .attr("fill", d => { while (d.depth > 1) d = d.parent; return color(d.data.name); })
-        .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.75 : 0.45) : 0)
+        .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.8 : 0.5) : 0)
         .attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
         .attr("d", d => arc(d.current));
 
@@ -696,7 +769,7 @@
       path.style("cursor", "pointer")
         .on("mouseenter", (event, d) => {
           tooltip.style.display = 'block';
-          tooltip.innerHTML = `<strong>${d.data.name}</strong><br>${d.value} espèces répertoriées`;
+          tooltip.innerHTML = `<strong>${d.data.name}</strong><br>${d.value} espèces`;
         })
         .on("mousemove", (event) => {
           tooltip.style.left = (event.clientX + 14) + 'px';
@@ -708,16 +781,27 @@
       const parent = svg.append("circle")
         .datum(root)
         .attr("r", radius)
-        .attr("fill", "transparent")
+        .attr("fill", "rgba(255,255,255,0.02)")
         .attr("pointer-events", "all")
         .style("cursor", "pointer")
         .on("click", clicked);
 
       function clicked(event, p) {
+        if (!p.children) {
+          // Si c'est une feuille terminale (ex: Ordre des papillons), on filtre et on bascule sur les vignettes !
+          if (p.data.rank && p.data.name) {
+            setFilter(p.data.rank, p.data.name);
+            switchView('grid');
+          }
+          return;
+        }
+
         parent.datum(p.parent || root);
 
         if (p.data.rank && p.data.name) {
           setFilter(p.data.rank, p.data.name);
+        } else if (p === root) {
+          setFilter(null, null);
         }
 
         root.each(d => d.target = {
@@ -727,7 +811,7 @@
           y1: Math.max(0, d.y1 - p.depth)
         });
 
-        const t = svg.transition().duration(750);
+        const t = svg.transition().duration(700);
 
         path.transition(t)
           .tween("data", d => {
@@ -737,7 +821,7 @@
           .filter(function(d) {
             return +this.getAttribute("fill-opacity") || arcVisible(d.target);
           })
-          .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.75 : 0.45) : 0)
+          .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.8 : 0.5) : 0)
           .attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
           .attrTween("d", d => () => arc(d.current));
       }
@@ -747,7 +831,6 @@
       }
     }
 
-    // 4. Arbre taxonomique de gauche
     function buildTaxonomyTree() {
       const treeContainer = document.getElementById('taxoTree');
       treeContainer.innerHTML = '';
@@ -799,16 +882,19 @@
 
       label.onclick = (e) => {
         e.stopPropagation();
+        document.querySelectorAll('.tree-label').forEach(l => l.classList.remove('selected'));
+        label.classList.add('selected');
+
         const children = div.querySelector('.tree-children');
         if (children) children.classList.toggle('expanded');
         setFilter(rank, title);
+        switchView('grid');
       };
 
       div.appendChild(label);
       return div;
     }
 
-    // 5. Filtrage
     function setFilter(rank, value) {
       currentFilter.rank = rank;
       currentFilter.value = value;
@@ -835,8 +921,9 @@
 
       page = 1;
       updateSubbar();
-      if (document.getElementById('viewGrid').classList.contains('active')) {
-        renderGrid();
+      renderGrid();
+      if (document.getElementById('viewMap').classList.contains('active')) {
+        updateMapMarkers();
       }
     }
 
@@ -846,7 +933,6 @@
       document.getElementById('filterStatus').innerText = `${label} (${filteredList.length} espèces)`;
     }
 
-    // 6. Vue Planches / Mosaïque
     function renderGrid() {
       const container = document.getElementById('matrixGrid');
       container.innerHTML = '';
@@ -880,7 +966,6 @@
       container.scrollTop = 0;
     }
 
-    // 7. Vue Carte Satellite Globale
     function initGlobalMap() {
       setTimeout(() => {
         if (!globalMap) {
@@ -888,40 +973,56 @@
           L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri'
           }).addTo(globalMap);
+          markersLayer = L.layerGroup().addTo(globalMap);
         }
-
-        // Nettoyer les anciens marqueurs
-        globalMap.eachLayer(layer => {
-          if (layer instanceof L.CircleMarker) globalMap.removeLayer(layer);
-        });
-
-        // Placer les points géolocalisés du filtre en cours
-        filteredList.forEach(sp => {
-          if (sp.coordinates && sp.coordinates.lat && sp.coordinates.lng) {
-            const circle = L.circleMarker([sp.coordinates.lat, sp.coordinates.lng], {
-              radius: 4,
-              fillColor: '#38bdf8',
-              color: '#fff',
-              weight: 0.5,
-              opacity: 0.8,
-              fillOpacity: 0.7
-            }).addTo(globalMap);
-
-            circle.on('click', () => openExpertPanel(sp));
-          }
-        });
-
+        updateMapMarkers();
         globalMap.invalidateSize();
       }, 100);
     }
 
-    // 8. Fiche d'expertise droite
+    function updateMapMarkers() {
+      if (!globalMap || !markersLayer) return;
+      markersLayer.clearLayers();
+
+      // On affiche les spécimens géolocalisés
+      filteredList.slice(0, 1000).forEach(sp => {
+        if (sp.coordinates && sp.coordinates.lat && sp.coordinates.lng) {
+          const circle = L.circleMarker([sp.coordinates.lat, sp.coordinates.lng], {
+            radius: 5,
+            fillColor: '#38bdf8',
+            color: '#ffffff',
+            weight: 1,
+            opacity: 0.9,
+            fillOpacity: 0.75
+          });
+
+          // Infobulle riche avec vignette photo au clic !
+          const popupContent = `
+            <img class="map-popup-thumb" src="${sp.photo_url || ''}" alt="">
+            <div class="map-popup-body">
+              <div class="map-popup-title">${sp.scientific_name}</div>
+              <div class="map-popup-vern">${sp.common_name || sp.taxonomy.family || ''}</div>
+              <button class="map-popup-btn" onclick='window.triggerSpecimenDetail(${JSON.stringify(sp.id)})'>Examiner la fiche</button>
+            </div>
+          `;
+
+          circle.bindPopup(popupContent);
+          markersLayer.addLayer(circle);
+        }
+      });
+    }
+
+    window.triggerSpecimenDetail = function(id) {
+      const sp = rawSpecies.find(s => s.id === id);
+      if (sp) openExpertPanel(sp);
+    };
+
     function openExpertPanel(sp) {
       const panel = document.getElementById('expertPanel');
       panel.classList.add('open');
 
       document.getElementById('detailSciName').innerText = sp.scientific_name;
-      document.getElementById('detailVernName').innerText = sp.common_name || 'Nom commun non renseigné';
+      document.getElementById('detailVernName').innerText = sp.common_name || 'Nom vernaculaire non renseigné';
       document.getElementById('detailImg').src = sp.photo_url || '';
 
       const driveLink = document.getElementById('detailDriveLink');
@@ -996,7 +1097,6 @@
       document.getElementById('expertPanel').classList.remove('open');
     }
 
-    // Événements
     document.getElementById('globalSearch').addEventListener('input', (e) => {
       currentFilter.query = e.target.value.trim();
       applyFilter();
@@ -1005,6 +1105,8 @@
     document.getElementById('resetFilterBtn').addEventListener('click', () => {
       currentFilter = { query: '', rank: null, value: null, driveOnly: false };
       document.getElementById('globalSearch').value = '';
+      document.querySelectorAll('.quick-tag').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tree-label').forEach(l => l.classList.remove('selected'));
       applyFilter();
     });
 
