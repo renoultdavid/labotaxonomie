@@ -101,7 +101,7 @@ fetch('data.json')
   .catch(err => console.warn('Erreur chargement data.json...', err));
 
 // ========================================================
-// PERSISTANCE DE LA NAVIGATION PAR URL (ZÉRO RETOUR ACCUEIL AU REFRESH)
+// PERSISTANCE DE LA NAVIGATION PAR URL
 // ========================================================
 function updateURLHash(moduleId, tabIndex, speciesId) {
   if (speciesId) {
@@ -121,7 +121,7 @@ function restoreStateFromURL() {
   if (parts[0] === 'species' && parts[1]) {
     const sp = globalSpeciesData.find(s => String(s.id) === parts[1]);
     if (sp) {
-      openModule('module1');
+      openModule('module1', false);
       openSpeciesSheet(sp);
     }
   } else if (parts[0] === 'module1' || parts[0] === 'module2') {
@@ -170,9 +170,7 @@ function switchModuleTab(moduleId, tabIndex, updateHash = true) {
   if (updateHash) updateURLHash(moduleId, tabIndex);
 }
 
-// ========================================================
-// 1. RECHERCHE EXPERT
-// ========================================================
+// 1. EXPERT
 function initDeepExpertTree() {
   if (!globalSpeciesData) return;
   const treeContainer = document.getElementById('expertTreeContainer');
@@ -356,9 +354,7 @@ document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
   renderExpertResultsDOM();
 });
 
-// ========================================================
-// 2. GÉOGRAPHIE 2D
-// ========================================================
+// 2. GÉO 2D
 let geoMap = null;
 let clusterGroup = null;
 let activeGeoGroups = new Set(['all', 'Aves', 'Lepidoptera', 'Coleoptera', 'Araneae', 'Reptilia', 'Amphibia', 'Mammalia', 'Fish', 'Plantae', 'Fungi', 'Other']);
@@ -481,6 +477,7 @@ function populateGeoMarkers() {
         <div class="geo-pop-sci">${sp.scientific_name}</div>
         <div class="geo-pop-vern">${sp.common_name || sp.taxonomy.family || ''}</div>
         <div style="font-size:0.7rem; color:#94a3b8; margin-top:0.3rem;">${sp.place || 'Station de relevé'}</div>
+        <button style="margin-top:0.4rem; padding:0.25rem 0.5rem; background:#38bdf8; border:none; border-radius:4px; font-weight:700; cursor:pointer;" onclick='openSpeciesSheetFromId("${sp.id}")'>Voir Fiche</button>
       </div>
     `);
 
@@ -536,9 +533,7 @@ function syncGeoRightPane() {
   container.appendChild(galleryDiv);
 }
 
-// ========================================================
-// 3. RECHERCHE VISUELLE
-// ========================================================
+// 3. VISUEL
 const visualTree = [
   {
     id: 'birds',
@@ -1059,7 +1054,7 @@ function initStatsDashboard() {
 }
 
 // ========================================================
-// 6. SUPER-FICHE ESPÈCE : GRANDE PHOTO, VULNÉRABILITÉ & MONOGRAPHIE
+// 6. SUPER-FICHE ESPÈCE : SPLIT-SCREEN 50/50 ÉLARGI
 // ========================================================
 const iucnDefinitions = {
   'LC': { label: 'LC • Préoccupation mineure', class: 'iucn-lc' },
@@ -1073,19 +1068,27 @@ const iucnDefinitions = {
   'DD': { label: 'DD • Données insuffisantes', class: 'iucn-dd' }
 };
 
+function openSpeciesSheetFromId(id) {
+  if (!globalSpeciesData) return;
+  const sp = globalSpeciesData.find(s => String(s.id) === String(id));
+  if (sp) openSpeciesSheet(sp);
+}
+
 function openSpeciesSheet(sp) {
   currentOpenSpecies = sp;
   updateURLHash(null, null, sp.id);
 
   const overlay = document.getElementById('speciesSheetOverlay');
 
-  // Photo grand format nette
-  document.getElementById('sheetHeroImg').src = sp.photo_url || 'https://via.placeholder.com/900x500/080c14/475569?text=?';
+  // Photo pure sans rien dessus (Volet Gauche)
+  document.getElementById('sheetHeroImg').src = sp.photo_url || 'https://via.placeholder.com/900x900/080c14/475569?text=?';
+
+  // Volet Droit
   document.getElementById('sheetHeroSci').innerText = sp.scientific_name;
   document.getElementById('sheetHeroVern').innerText = sp.common_name || sp.taxonomy.genus || 'Taxon validé';
   document.getElementById('sheetHeroRank').innerText = sp.taxonomy.rank || (isTrueSpecies(sp) ? 'Espèce' : 'Taxon supérieur');
 
-  // Badge UICN de vulnérabilité
+  // Badge UICN
   const iucnEl = document.getElementById('sheetHeroIucn');
   const rawStatus = (sp.iucn_status || sp.conservation_status || 'LC').toUpperCase().trim();
   const iucnData = iucnDefinitions[rawStatus] || iucnDefinitions['LC'];
@@ -1095,16 +1098,16 @@ function openSpeciesSheet(sp) {
   // Remettre sur le 1er onglet
   switchSheetTab(0);
 
-  // Génération de la monographie spontanée
+  // Monographie
   generateSpontaneousMonograph(sp);
 
-  // Diagnostic écologique
+  // Diagnostic
   populateEcoDiagnostic(sp);
 
-  // Taxonomie complète
+  // Taxonomie
   populateTaxoLineage(sp);
 
-  // Données de terrain
+  // Terrain
   populateFieldData(sp);
 
   // Apparentés
@@ -1137,14 +1140,13 @@ function switchSheetTab(tabIndex) {
   drawers.forEach((d, i) => d.classList.toggle('active', i === tabIndex));
 }
 
-// MOTEUR DE MONOGRAPHIE SPONTANÉE (WIKIPÉDIA + GÉNÉRATEUR SCIENTIFIQUE)
+// MOTEUR DE MONOGRAPHIE FOUILLEE ET COMPLETE
 function generateSpontaneousMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
   contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire encyclopédique et compilation du diagnostic...`;
 
   const queryTitle = encodeURIComponent(sp.scientific_name);
-  // Requête multi-paragraphes
-  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=1400&titles=${queryTitle}&format=json&origin=*`;
+  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=1600&titles=${queryTitle}&format=json&origin=*`;
 
   fetch(endpoint)
     .then(res => res.json())
@@ -1153,9 +1155,8 @@ function generateSpontaneousMonograph(sp) {
       const pageId = pages ? Object.keys(pages)[0] : '-1';
 
       if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 80) {
-        renderMonographHTML(sp, pages[pageId].extract.trim(), "Notice encyclopédique naturaliste (Wikipédia API)");
+        renderMonographHTML(sp, pages[pageId].extract.trim(), "Notice naturaliste encyclopédique");
       } else {
-        // Génération spontanée pure du laboratoire
         renderSyntheticMonograph(sp);
       }
     })
@@ -1164,7 +1165,6 @@ function generateSpontaneousMonograph(sp) {
     });
 }
 
-// Algorithme de génération de synthèse savante
 function renderSyntheticMonograph(sp) {
   const sci = sp.scientific_name;
   const vern = sp.common_name ? `dénommé(e) communément <strong>${sp.common_name}</strong>` : `taxon systématique validé`;
@@ -1179,18 +1179,16 @@ function renderSyntheticMonograph(sp) {
   const syntheticText = `
     <p><strong>${sci}</strong>, ${vern}, est un organisme appartenant au grand règne des <strong>${k}</strong>, rattaché à l'ordre des <strong>${o}</strong> au sein de ${f} ${g}.</p>
     
-    <p><strong>Écologie & Morphologie générale :</strong> Ce taxon se caractérise par des adaptations morphologiques et physiologiques caractéristiques de sa famille. Son écologie est intimement liée aux équilibres des biotopes tempérés et méditerranéens, occupant une niche trophique déterminante pour la dynamique de son écosystème d'accueil.</p>
+    <p><strong>Écologie, Biotopes & Morphologie :</strong> Ce taxon présente l'ensemble des caractères morpho-anatomiques distinctifs de son clade. Sur le plan autoécologique, il exploite préférentiellement les milieux naturels préservés et les étages bioclimatiques caractéristiques de son aire de répartition, participant activement aux réseaux d'interactions trophiques et fonctionnelles de son biotope d'accueil.</p>
     
-    <p><strong>Statut au sein de l'Observatoire :</strong> Ce spécimen fait l'objet d'un suivi au laboratoire avec <strong>${obs} observation(s)</strong> recensée(s). (${place}, ${dateStr}). Sa persistance dans l'inventaire témoigne de la richesse écologique des stations prospectées.</p>
+    <p><strong>Statut au sein de la Collection :</strong> Ce taxon fait l'objet d'un suivi au laboratoire avec <strong>${obs} relevé(s)</strong> recensé(s) (${place}, ${dateStr}). Sa présence témoigne de la représentativité de l'inventaire écologique conduit sur le terrain.</p>
   `;
 
-  renderMonographHTML(sp, syntheticText, "Monographie synthétique générée par le Laboratoire Taxonomique");
+  renderMonographHTML(sp, syntheticText, "Monographie synthétique élaborée par le Laboratoire Taxonomique");
 }
 
 function renderMonographHTML(sp, textBody, sourceLabel) {
   const contentEl = document.getElementById('sheetWikiContent');
-  
-  // Formatage des paragraphes si texte brut
   let paragraphs = textBody;
   if (!textBody.includes('<p>')) {
     paragraphs = textBody.split('\n\n').filter(p => p.trim().length > 0).map(p => `<p>${p.trim()}</p>`).join('');
@@ -1198,7 +1196,7 @@ function renderMonographHTML(sp, textBody, sourceLabel) {
 
   contentEl.innerHTML = `
     ${paragraphs}
-    <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px dashed var(--border); font-size:0.75rem; color:var(--text-dim); text-align:right;">
+    <div style="margin-top:1.25rem; padding-top:0.75rem; border-top:1px dashed var(--border); font-size:0.75rem; color:var(--text-dim); text-align:right;">
       Source : ${sourceLabel}
     </div>
   `;
@@ -1223,7 +1221,7 @@ function populateEcoDiagnostic(sp) {
       <span class="sheet-info-lbl">Fréquence de contact</span>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.2rem;">
         <span class="sheet-info-val" style="color:var(--accent-emerald);">${sp.obs_count || 1} relevé(s)</span>
-        <button class="btn-open-photos-modal" onclick="openSpeciesPhotosModal('${sp.id}')">📷 Voir clichés</button>
+        <button class="btn-open-photos-modal" onclick="openSpeciesPhotosModal('${sp.id}')">📷 Clichés (${sp.obs_count || 1})</button>
       </div>
     </div>
   `;
@@ -1288,7 +1286,7 @@ function populateFieldData(sp) {
       <span class="sheet-info-lbl">Total des relevés</span>
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.2rem;">
         <span class="sheet-info-val" style="color:var(--accent-emerald);">${sp.obs_count || 1} fois</span>
-        <button class="btn-open-photos-modal" onclick="openSpeciesPhotosModal('${sp.id}')">📷 Galerie</button>
+        <button class="btn-open-photos-modal" onclick="openSpeciesPhotosModal('${sp.id}')">📷 Clichés (${sp.obs_count || 1})</button>
       </div>
     </div>
   `;
@@ -1322,7 +1320,7 @@ function populateRelatedSpecies(sp) {
 }
 
 // ========================================================
-// 7. MODALE DES CLICHÉS MULTIPLES DE L'ESPÈCE
+// 7. MODALE DE MOSAÏQUE DES PHOTOS DE L'ESPÈCE & SWITCH EN GRAND
 // ========================================================
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
@@ -1330,19 +1328,27 @@ function openSpeciesPhotosModal(speciesId) {
   if (!sp) return;
 
   const modal = document.getElementById('obsPhotosModal');
-  document.getElementById('obsPhotosModalTitle').innerText = sp.scientific_name;
+  document.getElementById('obsPhotosModalTitle').innerText = `${sp.scientific_name} (cliquer pour afficher en grand)`;
 
   const grid = document.getElementById('obsPhotosModalGrid');
   grid.innerHTML = '';
 
-  // Liste des photos de l'espèce (si tableau sp.photos ou relevés multiples du même taxon)
+  // Trouve toutes les observations répertoriées sous ce même nom scientifique
   const allSightings = globalSpeciesData.filter(s => s.scientific_name === sp.scientific_name);
 
   allSightings.forEach((sighting, idx) => {
     const card = document.createElement('div');
     card.className = 'gallery-card';
     const thumb = sighting.photo_url || sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
-    
+
+    // AU CLIC : BASCULE DE LA PHOTO DU VOLET GAUCHE EN GRAND FORMAT
+    card.onclick = () => {
+      document.getElementById('sheetHeroImg').src = thumb;
+      // Met à jour la station et la date dans l'onglet terrain si dispo
+      populateFieldData(sighting);
+      closeObsPhotosModal();
+    };
+
     card.innerHTML = `
       <img class="gallery-photo" src="${thumb}" alt="" loading="lazy" />
       <div class="gallery-overlay"></div>
