@@ -213,62 +213,89 @@
   </div>
 
   <!-- ========================================================
-       SUPER-FICHE ESPÈCE PLEIN ÉCRAN
+       SUPER-FICHE ESPÈCE PLEIN ÉCRAN NOBLE
        ======================================================== -->
   <div class="species-sheet-overlay" id="speciesSheetOverlay">
     <div class="species-sheet-modal">
       
-      <!-- En-tête héroïque -->
-      <div class="sheet-hero">
-        <img class="sheet-hero-img" id="sheetHeroImg" src="" alt="" />
-        <div class="sheet-hero-gradient"></div>
-        <button class="sheet-close-btn" onclick="closeSpeciesSheet()" title="Fermer la fiche">✕</button>
-        <div class="sheet-hero-content">
-          <div class="sheet-rank-badge" id="sheetHeroRank">Espèce</div>
-          <h2 class="sheet-hero-sci" id="sheetHeroSci">Nom Scientifique</h2>
-          <div class="sheet-hero-vern" id="sheetHeroVern">Nom Français</div>
+      <!-- Bouton de fermeture flottant -->
+      <button class="sheet-close-btn" onclick="closeSpeciesSheet()" title="Fermer la fiche (Échap)">✕</button>
+
+      <!-- Conteneur complet défilant verticalement avec ascenseur -->
+      <div class="sheet-main-scroll">
+        
+        <!-- Cadre Photo Affiche Grand Format -->
+        <div class="sheet-poster-frame">
+          <img class="sheet-poster-img" id="sheetHeroImg" src="" alt="" />
+          <div class="sheet-poster-glow"></div>
         </div>
-      </div>
 
-      <!-- Barre d'onglets de la fiche -->
-      <div class="sheet-nav-tabs">
-        <button class="sheet-tab-btn active" onclick="switchSheetTab(0)">📖 Description & Mœurs</button>
-        <button class="sheet-tab-btn" onclick="switchSheetTab(1)">🏛️ Taxonomie Complète</button>
-        <button class="sheet-tab-btn" onclick="switchSheetTab(2)">📍 Données de Terrain</button>
-        <button class="sheet-tab-btn" onclick="switchSheetTab(3)">🌿 Espèces Apparentées</button>
-      </div>
-
-      <!-- Corps des tiroirs -->
-      <div class="sheet-body-scroll">
-        <!-- Tiroir 0 : Description dynamique -->
-        <div class="sheet-drawer active" id="sheetDrawer-0">
-          <div class="sheet-section-title">Notice biologique & naturaliste</div>
-          <div class="sheet-wiki-box" id="sheetWikiContent">
-            <span class="sheet-loading-spinner"></span> Interrogation de l'observatoire encyclopédique...
+        <!-- Cartouche d'identité naturaliste sous la photo -->
+        <div class="sheet-header-identity">
+          <div class="sheet-badges-row">
+            <span class="sheet-rank-badge" id="sheetHeroRank">Espèce</span>
+            <span class="sheet-iucn-badge" id="sheetHeroIucn">LC • Préoccupation mineure</span>
           </div>
-          <div class="sheet-section-title" style="margin-top:1.5rem;">Diagnostic écologique du laboratoire</div>
-          <div class="sheet-diag-grid" id="sheetEcoDiag"></div>
+          <h1 class="sheet-title-sci" id="sheetHeroSci">Nom Scientifique</h1>
+          <div class="sheet-title-vern" id="sheetHeroVern">Nom Français Normalisé</div>
         </div>
 
-        <!-- Tiroir 1 : Arbre cladistique -->
-        <div class="sheet-drawer" id="sheetDrawer-1">
-          <div class="sheet-section-title">Classification phylogénétique complète</div>
-          <div class="sheet-lineage-list" id="sheetTaxoLineage"></div>
+        <!-- Onglets tiroirs -->
+        <div class="sheet-nav-tabs">
+          <button class="sheet-tab-btn active" onclick="switchSheetTab(0)">📖 Monographie & Mœurs</button>
+          <button class="sheet-tab-btn" onclick="switchSheetTab(1)">🏛️ Lignée Cladistique</button>
+          <button class="sheet-tab-btn" onclick="switchSheetTab(2)">📍 Données de Prospection</button>
+          <button class="sheet-tab-btn" onclick="switchSheetTab(3)">🌿 Espèces Apparentées</button>
         </div>
 
-        <!-- Tiroir 2 : Données de prospection -->
-        <div class="sheet-drawer" id="sheetDrawer-2">
-          <div class="sheet-section-title">Historique des contacts de terrain</div>
-          <div class="sheet-field-grid" id="sheetFieldData"></div>
+        <!-- Contenu des tiroirs -->
+        <div class="sheet-drawers-content">
+          <!-- Tiroir 0 : Monographie savante -->
+          <div class="sheet-drawer active" id="sheetDrawer-0">
+            <div class="sheet-section-title">Monographie naturaliste & écologie</div>
+            <div class="sheet-wiki-box" id="sheetWikiContent">
+              <span class="sheet-loading-spinner"></span> Élaboration de la synthèse monographique...
+            </div>
+
+            <div class="sheet-section-title" style="margin-top:1.5rem;">Diagnostic éco-systématique</div>
+            <div class="sheet-diag-grid" id="sheetEcoDiag"></div>
+          </div>
+
+          <!-- Tiroir 1 : Taxonomie complète -->
+          <div class="sheet-drawer" id="sheetDrawer-1">
+            <div class="sheet-section-title">Classification systématique (Règne à Espèce)</div>
+            <div class="sheet-lineage-list" id="sheetTaxoLineage"></div>
+          </div>
+
+          <!-- Tiroir 2 : Données terrain -->
+          <div class="sheet-drawer" id="sheetDrawer-2">
+            <div class="sheet-section-title">Relevés & Stations d'inventaire</div>
+            <div class="sheet-field-grid" id="sheetFieldData"></div>
+          </div>
+
+          <!-- Tiroir 3 : Apparentés -->
+          <div class="sheet-drawer" id="sheetDrawer-3">
+            <div class="sheet-section-title" id="sheetRelatedTitle">Taxons apparentés dans la collection</div>
+            <div class="results-gallery-mode" id="sheetRelatedGrid"></div>
+          </div>
         </div>
 
-        <!-- Tiroir 3 : Espèces apparentées -->
-        <div class="sheet-drawer" id="sheetDrawer-3">
-          <div class="sheet-section-title" id="sheetRelatedTitle">Taxons du même genre / même famille</div>
-          <div class="results-gallery-mode" id="sheetRelatedGrid"></div>
-        </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Modale Mini-Mosaïque de toutes les photos de l'espèce -->
+  <div class="obs-photos-modal" id="obsPhotosModal">
+    <div class="obs-photos-modal-card">
+      <div class="obs-photos-modal-header">
+        <div>
+          <div style="font-size:0.75rem; text-transform:uppercase; color:var(--accent-emerald); font-weight:800;">Galerie complète des relevés</div>
+          <div class="obs-photos-modal-title" id="obsPhotosModalTitle">Spécimens observés</div>
+        </div>
+        <button class="sheet-close-btn" style="position:static;" onclick="closeObsPhotosModal()">&times;</button>
+      </div>
+      <div class="obs-photos-modal-grid" id="obsPhotosModalGrid"></div>
     </div>
   </div>
 
