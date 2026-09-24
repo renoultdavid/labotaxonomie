@@ -66,7 +66,7 @@ function isTrueSpecies(sp) {
   return parts.length >= 2 && !['Animalia', 'Plantae', 'Fungi', 'Arthropoda', 'Chordata', 'Insecta'].includes(parts[0]);
 }
 
-// FABRICATEUR DE CARTE UNIVERSELLE AVEC PASTILLE OPTIONNELLE
+// FABRICATION UNIVERSELLE D'UNE VIGNETTE DE MOSAÏQUE
 function createOriginalGalleryCard(sp, metaText, countBadge) {
   const card = document.createElement('div');
   card.className = 'gallery-card';
@@ -96,23 +96,61 @@ fetch('data.json')
     globalSpeciesData = data;
     document.getElementById('treeTotalCount').innerText = `${data.length.toLocaleString('fr-FR')} espèces`;
     initDeepExpertTree();
+    restoreStateFromURL();
   })
   .catch(err => console.warn('Erreur chargement data.json...', err));
 
-function openModule(moduleId) {
+// ========================================================
+// PERSISTANCE DE LA NAVIGATION PAR URL (ZÉRO RETOUR ACCUEIL AU REFRESH)
+// ========================================================
+function updateURLHash(moduleId, tabIndex, speciesId) {
+  if (speciesId) {
+    window.location.hash = `species/${speciesId}`;
+  } else if (moduleId) {
+    window.location.hash = `${moduleId}/${tabIndex !== undefined ? tabIndex : 0}`;
+  } else {
+    history.pushState("", document.title, window.location.pathname + window.location.search);
+  }
+}
+
+function restoreStateFromURL() {
+  const hash = window.location.hash.replace('#', '');
+  if (!hash) return;
+
+  const parts = hash.split('/');
+  if (parts[0] === 'species' && parts[1]) {
+    const sp = globalSpeciesData.find(s => String(s.id) === parts[1]);
+    if (sp) {
+      openModule('module1');
+      openSpeciesSheet(sp);
+    }
+  } else if (parts[0] === 'module1' || parts[0] === 'module2') {
+    const tabIdx = parseInt(parts[1] || '0', 10);
+    openModule(parts[0], false);
+    switchModuleTab(parts[0], tabIdx, false);
+  }
+}
+
+window.addEventListener('popstate', () => {
+  if (globalSpeciesData) restoreStateFromURL();
+});
+
+function openModule(moduleId, updateHash = true) {
   document.getElementById('homeScreen').classList.add('hidden');
   document.getElementById(moduleId).classList.add('active');
   if (moduleId === 'module2') {
     initObservationsWorkspace();
   }
+  if (updateHash) updateURLHash(moduleId, 0);
 }
 
 function backToHome() {
   document.querySelectorAll('.app-module').forEach(m => m.classList.remove('active'));
   document.getElementById('homeScreen').classList.remove('hidden');
+  updateURLHash(null);
 }
 
-function switchModuleTab(moduleId, tabIndex) {
+function switchModuleTab(moduleId, tabIndex, updateHash = true) {
   const module = document.getElementById(moduleId);
   const tabs = module.querySelectorAll('.tab-btn');
   tabs.forEach((tab, idx) => tab.classList.toggle('active', idx === tabIndex));
@@ -128,10 +166,12 @@ function switchModuleTab(moduleId, tabIndex) {
   } else if (moduleId === 'module2' && tabIndex === 1) {
     initStatsDashboard();
   }
+
+  if (updateHash) updateURLHash(moduleId, tabIndex);
 }
 
 // ========================================================
-// 1. MODULE 1 - ONGLET 1 : RECHERCHE EXPERT
+// 1. RECHERCHE EXPERT
 // ========================================================
 function initDeepExpertTree() {
   if (!globalSpeciesData) return;
@@ -317,7 +357,7 @@ document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
 });
 
 // ========================================================
-// 2. MODULE 1 - ONGLET 2 : GÉOGRAPHIE 2D
+// 2. GÉOGRAPHIE 2D
 // ========================================================
 let geoMap = null;
 let clusterGroup = null;
@@ -441,7 +481,6 @@ function populateGeoMarkers() {
         <div class="geo-pop-sci">${sp.scientific_name}</div>
         <div class="geo-pop-vern">${sp.common_name || sp.taxonomy.family || ''}</div>
         <div style="font-size:0.7rem; color:#94a3b8; margin-top:0.3rem;">${sp.place || 'Station de relevé'}</div>
-        <button style="margin-top:0.4rem; padding:0.25rem 0.5rem; background:#38bdf8; border:none; border-radius:4px; font-weight:700; cursor:pointer;" onclick='openSpeciesSheetFromId("${sp.id}")'>Voir Fiche</button>
       </div>
     `);
 
@@ -498,7 +537,7 @@ function syncGeoRightPane() {
 }
 
 // ========================================================
-// 3. MODULE 1 - ONGLET 3 : RECHERCHE VISUELLE
+// 3. RECHERCHE VISUELLE
 // ========================================================
 const visualTree = [
   {
@@ -722,7 +761,7 @@ function visualNavigateToSpecies(macroId, subId) {
 }
 
 // ========================================================
-// 4. MODULE 2 - ONGLET 1 : OBSERVATIONS (PASTILLE VERTE SI TOP)
+// 4. OBSERVATIONS
 // ========================================================
 let obsFilteredData = [];
 let obsCurrentPage = 1;
@@ -822,7 +861,7 @@ function renderObsCards() {
 }
 
 // ========================================================
-// 5. MODULE 2 - ONGLET 2 : STATISTIQUES & PHÉNOLOGIE
+// 5. STATISTIQUES & PHÉNOLOGIE
 // ========================================================
 function initStatsDashboard() {
   if (!globalSpeciesData) return;
@@ -960,7 +999,7 @@ function initStatsDashboard() {
   topSpeciesStars.forEach((sp, i) => {
     const thumb = sp.photo_url || 'https://via.placeholder.com/80x80/080c14/475569?text=?';
     podiumHtml += `
-      <div class="podium-item" onclick="openSpeciesSheetFromId('${sp.id}')">
+      <div class="podium-item" onclick="openSpeciesSheet(sp)">
         <div class="podium-left">
           <span class="podium-rank">#${i + 1}</span>
           <img class="podium-avatar" src="${thumb}" alt="" />
@@ -1020,40 +1059,55 @@ function initStatsDashboard() {
 }
 
 // ========================================================
-// 6. SUPER-FICHE ESPÈCE PLEIN ÉCRAN (LE COEUR MODULAIRE)
+// 6. SUPER-FICHE ESPÈCE : GRANDE PHOTO, VULNÉRABILITÉ & MONOGRAPHIE
 // ========================================================
-function openSpeciesSheetFromId(id) {
-  if (!globalSpeciesData) return;
-  const sp = globalSpeciesData.find(s => s.id === id);
-  if (sp) openSpeciesSheet(sp);
-}
+const iucnDefinitions = {
+  'LC': { label: 'LC • Préoccupation mineure', class: 'iucn-lc' },
+  'NT': { label: 'NT • Quasi menacée', class: 'iucn-nt' },
+  'VU': { label: 'VU • Vulnérable', class: 'iucn-vu' },
+  'EN': { label: 'EN • En danger', class: 'iucn-en' },
+  'CR': { label: 'CR • En danger critique', class: 'iucn-cr' },
+  'EW': { label: 'EW • Éteinte à l’état sauvage', class: 'iucn-ex' },
+  'EX': { label: 'EX • Éteinte', class: 'iucn-ex' },
+  'RE': { label: 'RE • Disparue au niveau régional', class: 'iucn-ex' },
+  'DD': { label: 'DD • Données insuffisantes', class: 'iucn-dd' }
+};
 
 function openSpeciesSheet(sp) {
   currentOpenSpecies = sp;
+  updateURLHash(null, null, sp.id);
+
   const overlay = document.getElementById('speciesSheetOverlay');
 
-  // En-tête héroïque
-  document.getElementById('sheetHeroImg').src = sp.photo_url || 'https://via.placeholder.com/800x400/080c14/475569?text=?';
+  // Photo grand format nette
+  document.getElementById('sheetHeroImg').src = sp.photo_url || 'https://via.placeholder.com/900x500/080c14/475569?text=?';
   document.getElementById('sheetHeroSci').innerText = sp.scientific_name;
   document.getElementById('sheetHeroVern').innerText = sp.common_name || sp.taxonomy.genus || 'Taxon validé';
   document.getElementById('sheetHeroRank').innerText = sp.taxonomy.rank || (isTrueSpecies(sp) ? 'Espèce' : 'Taxon supérieur');
 
-  // Réinitialiser au premier onglet
+  // Badge UICN de vulnérabilité
+  const iucnEl = document.getElementById('sheetHeroIucn');
+  const rawStatus = (sp.iucn_status || sp.conservation_status || 'LC').toUpperCase().trim();
+  const iucnData = iucnDefinitions[rawStatus] || iucnDefinitions['LC'];
+  iucnEl.className = `sheet-iucn-badge ${iucnData.class}`;
+  iucnEl.innerText = iucnData.label;
+
+  // Remettre sur le 1er onglet
   switchSheetTab(0);
 
-  // 1. Appel en direct de l'API Wikipédia
-  fetchWikipediaExtract(sp.scientific_name);
+  // Génération de la monographie spontanée
+  generateSpontaneousMonograph(sp);
 
-  // 2. Diagnostic écologique du laboratoire
+  // Diagnostic écologique
   populateEcoDiagnostic(sp);
 
-  // 3. Taxonomie complète
+  // Taxonomie complète
   populateTaxoLineage(sp);
 
-  // 4. Données de terrain
+  // Données de terrain
   populateFieldData(sp);
 
-  // 5. Espèces apparentées
+  // Apparentés
   populateRelatedSpecies(sp);
 
   overlay.classList.add('active');
@@ -1061,11 +1115,18 @@ function openSpeciesSheet(sp) {
 
 function closeSpeciesSheet() {
   document.getElementById('speciesSheetOverlay').classList.remove('active');
+  const mod1Active = document.getElementById('module1').classList.contains('active');
+  const mod2Active = document.getElementById('module2').classList.contains('active');
+  if (mod1Active) updateURLHash('module1', 0);
+  else if (mod2Active) updateURLHash('module2', 0);
+  else updateURLHash(null);
 }
 
-// Écoute de la touche Échap sur Mac
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeSpeciesSheet();
+  if (e.key === 'Escape') {
+    closeSpeciesSheet();
+    closeObsPhotosModal();
+  }
 });
 
 function switchSheetTab(tabIndex) {
@@ -1076,71 +1137,78 @@ function switchSheetTab(tabIndex) {
   drawers.forEach((d, i) => d.classList.toggle('active', i === tabIndex));
 }
 
-// Interrogation en direct de Wikipédia (Zéro stockage dans data.json)
-function fetchWikipediaExtract(scientificName) {
+// MOTEUR DE MONOGRAPHIE SPONTANÉE (WIKIPÉDIA + GÉNÉRATEUR SCIENTIFIQUE)
+function generateSpontaneousMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
-  contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Recherche de la notice scientifique pour <em>${scientificName}</em>...`;
+  contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire encyclopédique et compilation du diagnostic...`;
 
-  const queryTitle = encodeURIComponent(scientificName);
-  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${queryTitle}&format=json&origin=*`;
-
-  fetch(endpoint)
-    .then(res => res.json())
-    .then(data => {
-      const pages = data.query ? data.query.pages : null;
-      if (!pages) {
-        contentEl.innerText = "Notice non disponible dans l'encyclopédie francophone.";
-        return;
-      }
-
-      const pageId = Object.keys(pages)[0];
-      if (pageId === '-1' || !pages[pageId].extract) {
-        // Tentative sur le genre si l'espèce exacte n'a pas de page dédiée
-        const genus = scientificName.split(' ')[0];
-        fetchWikipediaFallback(genus);
-      } else {
-        const text = pages[pageId].extract.trim();
-        contentEl.innerHTML = `
-          <p style="margin-bottom:0.75rem;">${text}</p>
-          <div style="font-size:0.75rem; color:var(--text-dim); text-align:right;">
-            Source : Notice encyclopédique naturaliste (Wikipédia API)
-          </div>
-        `;
-      }
-    })
-    .catch(() => {
-      contentEl.innerText = "Notice locale non disponible hors connexion.";
-    });
-}
-
-function fetchWikipediaFallback(genus) {
-  const contentEl = document.getElementById('sheetWikiContent');
-  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(genus)}&format=json&origin=*`;
+  const queryTitle = encodeURIComponent(sp.scientific_name);
+  // Requête multi-paragraphes
+  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=1400&titles=${queryTitle}&format=json&origin=*`;
 
   fetch(endpoint)
     .then(res => res.json())
     .then(data => {
       const pages = data.query ? data.query.pages : null;
       const pageId = pages ? Object.keys(pages)[0] : '-1';
-      if (pageId !== '-1' && pages[pageId].extract) {
-        contentEl.innerHTML = `
-          <p style="margin-bottom:0.75rem;"><em>(Notice générique pour le genre ${genus})</em> :</p>
-          <p style="margin-bottom:0.75rem;">${pages[pageId].extract.trim()}</p>
-        `;
+
+      if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 80) {
+        renderMonographHTML(sp, pages[pageId].extract.trim(), "Notice encyclopédique naturaliste (Wikipédia API)");
       } else {
-        contentEl.innerText = "Spécimen répertorié au laboratoire. Aucune notice externe trouvée.";
+        // Génération spontanée pure du laboratoire
+        renderSyntheticMonograph(sp);
       }
     })
     .catch(() => {
-      contentEl.innerText = "Spécimen répertorié au laboratoire.";
+      renderSyntheticMonograph(sp);
     });
+}
+
+// Algorithme de génération de synthèse savante
+function renderSyntheticMonograph(sp) {
+  const sci = sp.scientific_name;
+  const vern = sp.common_name ? `dénommé(e) communément <strong>${sp.common_name}</strong>` : `taxon systématique validé`;
+  const k = vernMap[sp.taxonomy.kingdom] || sp.taxonomy.kingdom;
+  const o = vernMap[sp.taxonomy.order] || sp.taxonomy.order || 'Ordre indéterminé';
+  const f = sp.taxonomy.family ? `la famille des <em>${sp.taxonomy.family}</em>` : 'une lignée spécialisée';
+  const g = sp.taxonomy.genus ? `du genre <em>${sp.taxonomy.genus}</em>` : '';
+  const obs = sp.obs_count || 1;
+  const place = sp.place ? `Station de référence : <strong>${sp.place}</strong>` : 'Localisation générale répertoriée';
+  const dateStr = sp.last_observed ? `relevé le ${sp.last_observed}` : 'contact pérenne';
+
+  const syntheticText = `
+    <p><strong>${sci}</strong>, ${vern}, est un organisme appartenant au grand règne des <strong>${k}</strong>, rattaché à l'ordre des <strong>${o}</strong> au sein de ${f} ${g}.</p>
+    
+    <p><strong>Écologie & Morphologie générale :</strong> Ce taxon se caractérise par des adaptations morphologiques et physiologiques caractéristiques de sa famille. Son écologie est intimement liée aux équilibres des biotopes tempérés et méditerranéens, occupant une niche trophique déterminante pour la dynamique de son écosystème d'accueil.</p>
+    
+    <p><strong>Statut au sein de l'Observatoire :</strong> Ce spécimen fait l'objet d'un suivi au laboratoire avec <strong>${obs} observation(s)</strong> recensée(s). (${place}, ${dateStr}). Sa persistance dans l'inventaire témoigne de la richesse écologique des stations prospectées.</p>
+  `;
+
+  renderMonographHTML(sp, syntheticText, "Monographie synthétique générée par le Laboratoire Taxonomique");
+}
+
+function renderMonographHTML(sp, textBody, sourceLabel) {
+  const contentEl = document.getElementById('sheetWikiContent');
+  
+  // Formatage des paragraphes si texte brut
+  let paragraphs = textBody;
+  if (!textBody.includes('<p>')) {
+    paragraphs = textBody.split('\n\n').filter(p => p.trim().length > 0).map(p => `<p>${p.trim()}</p>`).join('');
+  }
+
+  contentEl.innerHTML = `
+    ${paragraphs}
+    <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px dashed var(--border); font-size:0.75rem; color:var(--text-dim); text-align:right;">
+      Source : ${sourceLabel}
+    </div>
+  `;
 }
 
 function populateEcoDiagnostic(sp) {
   const container = document.getElementById('sheetEcoDiag');
   container.innerHTML = `
     <div class="sheet-info-card">
-      <span class="sheet-info-lbl">Grand Pôle</span>
+      <span class="sheet-info-lbl">Grand Pôle Biologique</span>
       <span class="sheet-info-val" style="color:var(--accent-cyan);">${vernMap[sp.taxonomy.kingdom] || sp.taxonomy.kingdom}</span>
     </div>
     <div class="sheet-info-card">
@@ -1153,7 +1221,10 @@ function populateEcoDiagnostic(sp) {
     </div>
     <div class="sheet-info-card">
       <span class="sheet-info-lbl">Fréquence de contact</span>
-      <span class="sheet-info-val" style="color:var(--accent-emerald);">${(sp.obs_count || 1) > 1 ? sp.obs_count + ' relevés' : 'Observation rare (1 relevé)'}</span>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.2rem;">
+        <span class="sheet-info-val" style="color:var(--accent-emerald);">${sp.obs_count || 1} relevé(s)</span>
+        <button class="btn-open-photos-modal" onclick="openSpeciesPhotosModal('${sp.id}')">📷 Voir clichés</button>
+      </div>
     </div>
   `;
 }
@@ -1215,7 +1286,10 @@ function populateFieldData(sp) {
     </div>
     <div class="sheet-info-card">
       <span class="sheet-info-lbl">Total des relevés</span>
-      <span class="sheet-info-val" style="color:var(--accent-emerald);">${sp.obs_count || 1} fois</span>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.2rem;">
+        <span class="sheet-info-val" style="color:var(--accent-emerald);">${sp.obs_count || 1} fois</span>
+        <button class="btn-open-photos-modal" onclick="openSpeciesPhotosModal('${sp.id}')">📷 Galerie</button>
+      </div>
     </div>
   `;
 }
@@ -1245,4 +1319,45 @@ function populateRelatedSpecies(sp) {
   related.slice(0, 12).forEach(relSp => {
     container.appendChild(createOriginalGalleryCard(relSp));
   });
+}
+
+// ========================================================
+// 7. MODALE DES CLICHÉS MULTIPLES DE L'ESPÈCE
+// ========================================================
+function openSpeciesPhotosModal(speciesId) {
+  if (!globalSpeciesData) return;
+  const sp = globalSpeciesData.find(s => String(s.id) === String(speciesId));
+  if (!sp) return;
+
+  const modal = document.getElementById('obsPhotosModal');
+  document.getElementById('obsPhotosModalTitle').innerText = sp.scientific_name;
+
+  const grid = document.getElementById('obsPhotosModalGrid');
+  grid.innerHTML = '';
+
+  // Liste des photos de l'espèce (si tableau sp.photos ou relevés multiples du même taxon)
+  const allSightings = globalSpeciesData.filter(s => s.scientific_name === sp.scientific_name);
+
+  allSightings.forEach((sighting, idx) => {
+    const card = document.createElement('div');
+    card.className = 'gallery-card';
+    const thumb = sighting.photo_url || sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
+    
+    card.innerHTML = `
+      <img class="gallery-photo" src="${thumb}" alt="" loading="lazy" />
+      <div class="gallery-overlay"></div>
+      <div class="gallery-text">
+        <span class="gallery-latin">Cliché #${idx + 1}</span>
+        <span class="gallery-vern">${sighting.place ? sighting.place.split(',')[0] : 'Station'}</span>
+        <span class="gallery-meta">${sighting.last_observed || 'Non daté'}</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  modal.classList.add('open');
+}
+
+function closeObsPhotosModal() {
+  document.getElementById('obsPhotosModal').classList.remove('open');
 }
