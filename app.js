@@ -8,6 +8,9 @@ let currentOpenSpecies = null;
 let sheetWorldMap = null;
 let sheetWorldTileLayer = null;
 
+// IDENTIFIANT INATURALIST POUR VERROUILLER STRICTEMENT SUR TES OBSERVATIONS
+const MY_INATURALIST_USERNAME = 'zanskar'; 
+
 const vernMap = {
   'Animalia': 'Animaux',
   'Plantae': 'Végétaux / Plantes',
@@ -958,7 +961,7 @@ function initStatsDashboard() {
   const grid = document.createElement('div');
   grid.className = 'stats-grid-2x2';
 
-  // Cadran 1 : Phénologie
+  // Phénologie
   const phenoBox = document.createElement('div');
   phenoBox.className = 'stat-box';
   let phenoBarsHtml = '';
@@ -984,7 +987,7 @@ function initStatsDashboard() {
   `;
   grid.appendChild(phenoBox);
 
-  // Cadran 2 : Donut de fréquence
+  // Rareté
   const rarityBox = document.createElement('div');
   rarityBox.className = 'stat-box';
   rarityBox.innerHTML = `
@@ -1026,7 +1029,7 @@ function initStatsDashboard() {
   `;
   grid.appendChild(rarityBox);
 
-  // Cadran 3 : Espèces reines
+  // Espèces stars
   const podiumBox = document.createElement('div');
   podiumBox.className = 'stat-box';
   let podiumHtml = '';
@@ -1056,7 +1059,7 @@ function initStatsDashboard() {
   `;
   grid.appendChild(podiumBox);
 
-  // Cadran 4 : Pôles
+  // Pôles
   const biomeBox = document.createElement('div');
   biomeBox.className = 'stat-box';
   const insectCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Insecta' && isSpeciesTerminal(s)).length;
@@ -1195,7 +1198,7 @@ function initOrUpdateWorldMap(sp) {
   }
 }
 
-// 7. MONOGRAPHIE STRUCTUREE AVEC FILTRAGE DU CONTENU CREUX
+// 7. MONOGRAPHIE STRUCTUREE SANS TEXTE CREUX
 function fetchStructuredNaturalistMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
   contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire naturaliste...`;
@@ -1449,7 +1452,7 @@ function populateRelatedSpecies(sp) {
   });
 }
 
-// 8. CLICHÉS PERSONNELS : RECHERCHE LOCALEMENT ET SUR L'OBSERVATION EXACTE
+// 8. CLICHÉS PERSONNELS VERROUILLÉS SUR TON COMPTE INATURALIST "ZANSKAR"
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
   const sp = globalSpeciesData.find(s => String(s.id) === String(speciesId));
@@ -1467,23 +1470,35 @@ function openSpeciesPhotosModal(speciesId) {
   }
 
   const grid = document.getElementById('obsPhotosModalGrid');
-  grid.innerHTML = '';
+  grid.innerHTML = `<div style="color:var(--text-dim); padding:1rem;"><span class="sheet-loading-spinner"></span> Recherche de vos clichés personnels...</div>`;
+  modal.classList.add('open');
 
-  // 1. Chercher toutes les entrées ayant le même nom scientifique dans data.json
-  const sameObservations = globalSpeciesData.filter(s => s.scientific_name === sp.scientific_name);
+  function renderPhotoCards(photos) {
+    grid.innerHTML = '';
+    photos.forEach((item, idx) => {
+      const card = document.createElement('div');
+      card.className = 'gallery-card';
+      card.onclick = () => {
+        document.getElementById('sheetHeroImg').src = item.url;
+        closeObsPhotosModal();
+      };
+
+      card.innerHTML = `
+        <img class="gallery-photo" src="${item.url}" alt="" loading="lazy" />
+        <div class="gallery-overlay"></div>
+        <div class="gallery-text">
+          <span class="gallery-latin">Cliché #${idx + 1}</span>
+          <span class="gallery-vern">${item.place ? item.place.split(',')[0] : 'Station'}</span>
+          <span class="gallery-meta">${item.date || 'Relevé'}</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // 1. Cliché principal de départ
   const myPhotosList = [];
-
-  sameObservations.forEach(s => {
-    if (s.photo_url && !myPhotosList.some(p => p.url === s.photo_url)) {
-      myPhotosList.push({
-        url: s.photo_url,
-        place: s.place || 'Station',
-        date: s.last_observed || 'Relevé'
-      });
-    }
-  });
-
-  if (myPhotosList.length === 0 && sp.photo_url) {
+  if (sp.photo_url) {
     myPhotosList.push({
       url: sp.photo_url,
       place: sp.place || 'Station',
@@ -1491,27 +1506,36 @@ function openSpeciesPhotosModal(speciesId) {
     });
   }
 
-  myPhotosList.forEach((item, idx) => {
-    const card = document.createElement('div');
-    card.className = 'gallery-card';
-    card.onclick = () => {
-      document.getElementById('sheetHeroImg').src = item.url;
-      closeObsPhotosModal();
-    };
-
-    card.innerHTML = `
-      <img class="gallery-photo" src="${item.url}" alt="" loading="lazy" />
-      <div class="gallery-overlay"></div>
-      <div class="gallery-text">
-        <span class="gallery-latin">Cliché #${idx + 1}</span>
-        <span class="gallery-vern">${item.place ? item.place.split(',')[0] : 'Station'}</span>
-        <span class="gallery-meta">${item.date || 'Relevé'}</span>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
-
-  modal.classList.add('open');
+  // 2. Requête iNaturalist verrouillée sur user_id=zanskar et taxon_id=sp.id
+  if (sp.id && !isNaN(sp.id)) {
+    const userFilter = MY_INATURALIST_USERNAME ? `&user_id=${encodeURIComponent(MY_INATURALIST_USERNAME)}` : '';
+    fetch(`https://api.inaturalist.org/v1/observations?taxon_id=${sp.id}${userFilter}&per_page=30&photos=true`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.results && data.results.length > 0) {
+          data.results.forEach(obs => {
+            if (obs.photos && obs.photos.length > 0) {
+              obs.photos.forEach(p => {
+                const medUrl = p.url ? p.url.replace('square', 'medium') : null;
+                if (medUrl && !myPhotosList.some(item => item.url === medUrl)) {
+                  myPhotosList.push({
+                    url: medUrl,
+                    place: obs.place_guess || sp.place,
+                    date: obs.observed_on || sp.last_observed
+                  });
+                }
+              });
+            }
+          });
+        }
+        renderPhotoCards(myPhotosList);
+      })
+      .catch(() => {
+        renderPhotoCards(myPhotosList);
+      });
+  } else {
+    renderPhotoCards(myPhotosList);
+  }
 }
 
 function closeObsPhotosModal() {
