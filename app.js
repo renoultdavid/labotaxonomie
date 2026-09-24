@@ -62,15 +62,26 @@ function normalizeStr(str) {
   return (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-// Norme iNaturalist : espèce terminale (binômes et trinômes)
+// Règle d'espèce terminale alignée sur iNaturalist (binômes, trinômes, hybrides, variétés)
 function isSpeciesTerminal(sp) {
   if (!sp || !sp.scientific_name) return false;
   const name = sp.scientific_name.trim();
+
+  // Exclure les rangs très généraux laissés sans identification
+  const broadRoots = ['Animalia', 'Plantae', 'Fungi', 'Arthropoda', 'Chordata', 'Insecta', 'Aves', 'Reptilia', 'Amphibia', 'Mammalia'];
+  if (broadRoots.includes(name)) return false;
+
   const parts = name.split(/\s+/);
-  if (parts.length < 2) return false;
-  if (parts[1].toLowerCase() === 'sp.' || parts[1].toLowerCase() === 'sp' || parts[1].toLowerCase() === 'indet.') return false;
-  const broadRoots = ['Animalia', 'Plantae', 'Fungi', 'Arthropoda', 'Chordata', 'Insecta'];
-  if (broadRoots.includes(parts[0])) return false;
+
+  // Si un seul mot : c'est un genre ou une famille non résolue
+  if (parts.length === 1) return false;
+
+  // Si mention explicite sp. ou indet. seule au niveau genre
+  if (parts.length === 2 && (parts[1].toLowerCase() === 'sp.' || parts[1].toLowerCase() === 'sp' || parts[1].toLowerCase() === 'indet.')) {
+    return false;
+  }
+
+  // Tout le reste est considéré par iNaturalist comme taxon terminal observé
   return true;
 }
 
@@ -104,7 +115,7 @@ function createOriginalGalleryCard(sp, metaText, countBadge) {
   return card;
 }
 
-// Chargement et initialisation
+// Chargement initial
 fetch('data.json')
   .then(res => res.json())
   .then(data => {
@@ -1192,16 +1203,16 @@ function initOrUpdateWorldMap(sp) {
   }
 }
 
-// 7. MONOGRAPHIE STRUCTUREE (WIKIPEDIA CIBLE + 3 CHAPITRES NATURELS)
+// 7. MONOGRAPHIE STRUCTUREE (CIBLAGE WIKIPEDIA SUR LE BINOME PARENT POUR LES SOUS-ESPECES)
 function fetchStructuredNaturalistMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
   contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire naturaliste...`;
 
-  // En cas de sous-espèce trinominale (ex: Regiscolia maculata flavifrons), chercher l'espèce parente
   const nameParts = sp.scientific_name.trim().split(/\s+/);
-  const searchName = (nameParts.length >= 3) ? `${nameParts[0]} ${nameParts[1]}` : sp.scientific_name;
+  // Toujours cibler les 2 premiers mots pour garantir un retour Wikipédia même sur les sous-espèces
+  const binomName = (nameParts.length >= 2) ? `${nameParts[0]} ${nameParts[1]}` : nameParts[0];
 
-  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=2000&titles=${encodeURIComponent(searchName)}&format=json&origin=*`;
+  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=2000&titles=${encodeURIComponent(binomName)}&format=json&origin=*`;
 
   fetch(endpoint)
     .then(res => res.json())
@@ -1209,10 +1220,9 @@ function fetchStructuredNaturalistMonograph(sp) {
       const pages = data.query ? data.query.pages : null;
       const pageId = pages ? Object.keys(pages)[0] : '-1';
 
-      if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 100) {
-        renderStructuredChapters(sp, pages[pageId].extract.trim(), searchName !== sp.scientific_name);
+      if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 80) {
+        renderStructuredChapters(sp, pages[pageId].extract.trim(), binomName !== sp.scientific_name);
       } else {
-        // Tentative sur le genre
         fetchGenusWikipediaFallback(sp, nameParts[0]);
       }
     })
@@ -1230,7 +1240,7 @@ function fetchGenusWikipediaFallback(sp, genus) {
       const pages = data.query ? data.query.pages : null;
       const pageId = pages ? Object.keys(pages)[0] : '-1';
 
-      if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 100) {
+      if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 80) {
         renderStructuredChapters(sp, pages[pageId].extract.trim(), true);
       } else {
         renderFieldLocalChapters(sp);
@@ -1433,7 +1443,7 @@ function populateRelatedSpecies(sp) {
   });
 }
 
-// 8. RÉCUPÉRATION STRICTE DES CLICHÉS DE L'OBSERVATION (ZÉRO TIERS)
+// 8. RÉCUPÉRATION STRICTEMENT LOCALE DES CLICHÉS (ZÉRO APPEL INATURALIST PAR ERREUR)
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
   const sp = globalSpeciesData.find(s => String(s.id) === String(speciesId));
@@ -1451,38 +1461,15 @@ function openSpeciesPhotosModal(speciesId) {
   }
 
   const grid = document.getElementById('obsPhotosModalGrid');
-  grid.innerHTML = `<div style="color:var(--text-dim); padding:1rem;"><span class="sheet-loading-spinner"></span> Recherche de vos clichés...</div>`;
-  modal.classList.add('open');
+  grid.innerHTML = '';
 
-  function renderPhotoCards(photos) {
-    grid.innerHTML = '';
-    photos.forEach((item, idx) => {
-      const card = document.createElement('div');
-      card.className = 'gallery-card';
-      card.onclick = () => {
-        document.getElementById('sheetHeroImg').src = item.url;
-        closeObsPhotosModal();
-      };
-
-      card.innerHTML = `
-        <img class="gallery-photo" src="${item.url}" alt="" loading="lazy" />
-        <div class="gallery-overlay"></div>
-        <div class="gallery-text">
-          <span class="gallery-latin">Cliché #${idx + 1}</span>
-          <span class="gallery-vern">${item.place ? item.place.split(',')[0] : 'Station'}</span>
-          <span class="gallery-meta">${item.date || 'Relevé'}</span>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-  }
-
-  // 1. Photos locales dans data.json
-  const localPhotos = [];
+  // Recherche rigoureuse sur tes données exactes
   const sameObservations = globalSpeciesData.filter(s => s.scientific_name === sp.scientific_name);
+  const myPhotosList = [];
+
   sameObservations.forEach(s => {
-    if (s.photo_url && !localPhotos.some(p => p.url === s.photo_url)) {
-      localPhotos.push({
+    if (s.photo_url && !myPhotosList.some(p => p.url === s.photo_url)) {
+      myPhotosList.push({
         url: s.photo_url,
         place: s.place || 'Station',
         date: s.last_observed || 'Relevé'
@@ -1490,31 +1477,36 @@ function openSpeciesPhotosModal(speciesId) {
     }
   });
 
-  // 2. Interrogation directe de l'observation spécifique (id) pour extraire TOUTES ses photos sans aucun tiers
-  if (sp.id && !isNaN(sp.id)) {
-    fetch(`https://api.inaturalist.org/v1/observations/${sp.id}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.results && data.results[0] && data.results[0].photos) {
-          data.results[0].photos.forEach(p => {
-            const medUrl = p.url ? p.url.replace('square', 'medium') : null;
-            if (medUrl && !localPhotos.some(item => item.url === medUrl)) {
-              localPhotos.push({
-                url: medUrl,
-                place: sp.place,
-                date: sp.last_observed
-              });
-            }
-          });
-        }
-        renderPhotoCards(localPhotos);
-      })
-      .catch(() => {
-        renderPhotoCards(localPhotos);
-      });
-  } else {
-    renderPhotoCards(localPhotos);
+  // Si l'espèce n'a qu'une seule ligne d'observation enregistrée dans le JSON
+  if (myPhotosList.length === 0 && sp.photo_url) {
+    myPhotosList.push({
+      url: sp.photo_url,
+      place: sp.place || 'Station',
+      date: sp.last_observed || 'Relevé'
+    });
   }
+
+  myPhotosList.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'gallery-card';
+    card.onclick = () => {
+      document.getElementById('sheetHeroImg').src = item.url;
+      closeObsPhotosModal();
+    };
+
+    card.innerHTML = `
+      <img class="gallery-photo" src="${item.url}" alt="" loading="lazy" />
+      <div class="gallery-overlay"></div>
+      <div class="gallery-text">
+        <span class="gallery-latin">Cliché #${idx + 1}</span>
+        <span class="gallery-vern">${item.place ? item.place.split(',')[0] : 'Station'}</span>
+        <span class="gallery-meta">${item.date || 'Relevé'}</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  modal.classList.add('open');
 }
 
 function closeObsPhotosModal() {
