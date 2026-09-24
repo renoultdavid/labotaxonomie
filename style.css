@@ -578,7 +578,7 @@ body {
 .podium-score { font-size: 0.8rem; font-weight: 700; color: var(--accent-emerald); }
 
 /* ========================================================
-   SUPER-FICHE ESPÈCE : SPLIT 50/50 ÉLARGI SANS ASCENSEUR HORIZONTAL
+   SUPER-FICHE ESPÈCE & RANG SUPÉRIEUR : SPLIT 50/50 ÉLARGI
    ======================================================== */
 .species-sheet-overlay {
   position: fixed;
@@ -598,6 +598,11 @@ body {
 .species-sheet-overlay.active {
   display: flex;
   opacity: 1;
+}
+
+/* Priorité d'empilement si la fiche de taxon s'ouvre par-dessus */
+#taxonSheetOverlay {
+  z-index: 10002;
 }
 
 .species-sheet-modal {
@@ -647,7 +652,7 @@ body {
   overflow: hidden;
 }
 
-/* VOLET GAUCHE (50%) : PHOTO PURE EN MAJESTÉ */
+/* VOLET GAUCHE (50%) : PHOTO PURE */
 .sheet-left-photo-pane {
   flex: 1;
   width: 50%;
@@ -667,6 +672,21 @@ body {
   object-fit: contain;
   background: #020306;
   display: block;
+}
+
+.sheet-photo-credit-tag {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  background: rgba(9, 14, 23, 0.85);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.725rem;
+  color: var(--accent-cyan);
+  backdrop-filter: blur(8px);
+  font-weight: 600;
+  pointer-events: none;
 }
 
 /* VOLET DROIT (50%) : INFORMATIONS & TIROIRS */
@@ -740,9 +760,7 @@ body {
   font-weight: 600;
 }
 
-/* ========================================================
-   ONGLETS TIROIRS : ASCENSEUR HORIZONTAL DÉFINITIVEMENT SUPPRIMÉ
-   ======================================================== */
+/* Onglets tiroirs sans ascenseur horizontal */
 .sheet-nav-tabs {
   background: #060910;
   border-bottom: 1px solid var(--border);
@@ -750,7 +768,7 @@ body {
   display: flex;
   gap: 0.35rem;
   flex-shrink: 0;
-  overflow-x: hidden !important; /* Interdit le défilement horizontal */
+  overflow-x: hidden !important;
   flex-wrap: nowrap;
 }
 
@@ -859,6 +877,38 @@ body {
   font-size: 0.95rem;
   font-weight: 700;
   color: #fff;
+}
+
+/* LIENS HYPERTEXTES VERS LES RANGS SUPÉRIEURS (CLIQUEURS) */
+.taxo-link {
+  color: var(--accent-cyan);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-bottom: 1px dashed rgba(56, 189, 248, 0.4);
+  width: fit-content;
+}
+
+.taxo-link:hover {
+  color: #fff;
+  border-bottom-color: #fff;
+  transform: translateX(2px);
+}
+
+.sheet-lineage-row.clickable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sheet-lineage-row.clickable:hover {
+  border-color: var(--accent-cyan);
+  background: #0e1524;
+}
+
+.sheet-lineage-row.clickable:hover .sheet-lineage-name {
+  color: var(--accent-cyan);
 }
 
 .btn-open-photos-modal {
