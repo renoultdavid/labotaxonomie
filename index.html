@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
-  <!-- Feuille de style personnalisée -->
   <link rel="stylesheet" href="style.css" />
 
   <!-- Leaflet JS -->
@@ -19,9 +18,7 @@
 </head>
 <body>
 
-  <!-- ========================================================
-       ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF
-       ======================================================== -->
+  <!-- ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF -->
   <div id="homeScreen">
     
     <!-- Volet 1 : Recherche d'Espèce -->
@@ -66,9 +63,7 @@
 
   </div>
 
-  <!-- ========================================================
-       MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS)
-       ======================================================== -->
+  <!-- MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS) -->
   <div class="app-module" id="module1">
     <div class="module-topbar">
       <div class="module-nav-left">
@@ -169,9 +164,7 @@
     </div>
   </div>
 
-  <!-- ========================================================
-       MODULE 2 : OBSERVATIONS & STATISTIQUES (2 ONGLETS)
-       ======================================================== -->
+  <!-- MODULE 2 : OBSERVATIONS & STATISTIQUES (2 ONGLETS) -->
   <div class="app-module" id="module2">
     <div class="module-topbar">
       <div class="module-nav-left">
@@ -181,43 +174,62 @@
 
       <div class="module-tabs">
         <button class="tab-btn active" onclick="switchModuleTab('module2', 0)">Planches d'Observations</button>
-        <button class="tab-btn" onclick="switchModuleTab('module2', 1)">Tableau de Bord & Ratios</button>
+        <button class="tab-btn" onclick="switchModuleTab('module2', 1)">Observatoire & Phénologie</button>
       </div>
     </div>
 
     <div class="module-view-stack">
       
-      <!-- Vue 2.1 : Observations complètes avec tris avancés -->
+      <!-- Vue 2.1 : Mosaïque Carrée Régulière + Pagination Stable -->
       <div class="module-view active" id="view2-0">
         <div class="obs-workspace">
-          <div class="obs-toolbar">
-            <div class="obs-search-box">
-              <input type="text" id="obsSearchInput" class="obs-search-field" placeholder="Rechercher par taxon, nom commun, lieu de station..." />
+          
+          <div class="obs-control-bar">
+            <div class="obs-search-wrap">
+              <input type="text" id="obsSearchInput" class="obs-search-field" placeholder="Filtrer (nom latin, nom vernaculaire, station)..." />
             </div>
-            <div class="obs-sort-box">
-              <span class="obs-sort-label">Trier par :</span>
-              <select id="obsSortSelect" class="obs-select">
-                <option value="date-desc">Date (les plus récentes d'abord)</option>
-                <option value="date-asc">Date (les plus anciennes)</option>
-                <option value="sci-asc">Nom scientifique (A → Z)</option>
-                <option value="sci-desc">Nom scientifique (Z → A)</option>
-                <option value="vern-asc">Nom français (A → Z)</option>
-                <option value="count-desc">Fréquence (espèces les plus observées)</option>
-                <option value="count-asc">Rareté (observées 1 seule fois)</option>
-              </select>
+
+            <div class="obs-actions-wrap">
+              <div class="obs-dropdown-group">
+                <span class="obs-label-tiny">Tri :</span>
+                <select id="obsSortSelect" class="obs-select">
+                  <option value="date-desc">Plus récentes d'abord</option>
+                  <option value="date-asc">Plus anciennes</option>
+                  <option value="sci-asc">Espèce binomiale (A → Z)</option>
+                  <option value="sci-desc">Espèce binomiale (Z → A)</option>
+                  <option value="vern-asc">Nom français (A → Z)</option>
+                  <option value="freq-desc">Espèces reines (les plus vues)</option>
+                  <option value="freq-asc">Raretés (vues 1 seule fois)</option>
+                </select>
+              </div>
+
+              <div class="obs-dropdown-group">
+                <span class="obs-label-tiny">Afficher :</span>
+                <select id="obsPageSizeSelect" class="obs-select">
+                  <option value="50">50 par page</option>
+                  <option value="100" selected>100 par page</option>
+                </select>
+              </div>
+
+              <!-- Contrôles de pagination légers -->
+              <div class="obs-paginator">
+                <button class="btn-page-nav" id="btnPagePrev" onclick="changeObsPage(-1)">&lt;</button>
+                <span id="obsPageIndicator" class="obs-page-num">Page 1 / 1</span>
+                <button class="btn-page-nav" id="btnPageNext" onclick="changeObsPage(1)">&gt;</button>
+              </div>
+
+              <div class="obs-metrics-pill" id="obsCountBadge">0 observation</div>
             </div>
-            <div class="obs-metrics-pill" id="obsCountBadge">0 observation</div>
           </div>
 
-          <div class="obs-grid-scroll" id="obsCardsGrid"></div>
+          <!-- Grille fixe anti-scintillement -->
+          <div class="obs-matrix-scroll" id="obsCardsGrid"></div>
         </div>
       </div>
 
-      <!-- Vue 2.2 : Statistiques & Analyses de biodiversité -->
+      <!-- Vue 2.2 : Tableau de bord analytique haute tenue -->
       <div class="module-view" id="view2-1">
-        <div class="stats-dashboard-scroll" id="statsDashboardArea">
-          <!-- Injecté dynamiquement par app.js -->
-        </div>
+        <div class="stats-dashboard-scroll" id="statsDashboardArea"></div>
       </div>
 
     </div>
@@ -227,14 +239,13 @@
   <div class="stats-modal" id="statsModal">
     <div class="stats-modal-card">
       <div class="stats-modal-header">
-        <div class="stats-modal-title" id="statsModalTitle">Détail du groupe</div>
+        <div class="stats-modal-title" id="statsModalTitle">Détail</div>
         <button class="stats-modal-close" onclick="closeStatsModal()">&times;</button>
       </div>
       <div class="stats-modal-body" id="statsModalBody"></div>
     </div>
   </div>
 
-  <!-- Fichier logique applicative -->
   <script src="app.js"></script>
 </body>
 </html>
