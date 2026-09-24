@@ -1203,12 +1203,10 @@ function fetchStructuredNaturalistMonograph(sp) {
   const nameParts = sp.scientific_name.trim().split(/\s+/);
   const binomName = (nameParts.length >= 2) ? `${nameParts[0]} ${nameParts[1]}` : nameParts[0];
 
-  // Requête sur le nom binominal
   queryWikipediaText(binomName, (text) => {
     if (isValidNaturalistText(text)) {
       renderStructuredChapters(sp, text, binomName !== sp.scientific_name);
     } else if (sp.common_name && sp.common_name.length > 2) {
-      // Deuxième chance : tester le nom vernaculaire (ex: Coccinelle à onze points)
       queryWikipediaText(sp.common_name, (vernText) => {
         if (isValidNaturalistText(vernText)) {
           renderStructuredChapters(sp, vernText, false);
@@ -1238,12 +1236,10 @@ function queryWikipediaText(title, callback) {
     .catch(() => callback(null));
 }
 
-// Détection stricte : élimine les listes de bases de données et catalogues
 function isValidNaturalistText(text) {
   if (!text || text.length < 100) return false;
   const lower = text.toLowerCase();
   
-  // Si le texte est dominé par des mentions de bases taxonomiques sans vraie description
   const catalogKeywords = ['selon biolib', 'selon fauna europaea', 'catalogue of life', 'liste des espèces', 'selon ncbi'];
   let matchCount = 0;
   catalogKeywords.forEach(kw => { if (lower.includes(kw)) matchCount++; });
@@ -1304,7 +1300,6 @@ function renderFieldLocalChapters(sp) {
   const place = sp.place ? `Station : <strong>${sp.place}</strong>` : 'Station renseignée';
   const dateStr = sp.last_observed ? `relevé du <strong>${sp.last_observed}</strong>` : 'contact pérenne';
 
-  // Compléments biologiques contextualisés par grand ordre
   let bioDetail = "Cet organisme exploite préférentiellement les milieux naturels préservés et les étages bioclimatiques caractéristiques de son aire de répartition, participant activement aux réseaux trophiques de son biotope d'accueil.";
   if (sp.taxonomy.family === 'Coccinellidae') {
     bioDetail = "Ce coléoptère prédateur est principalement aphidiphage (consommateur actif de pucerons et petits hémiptères). Les adultes fréquentent les herbacées ensoleillées, les lisières et les friches fleuries pour la chasse et la reproduction.";
@@ -1318,7 +1313,7 @@ function renderFieldLocalChapters(sp) {
     <div style="display:flex; flex-direction:column; gap:1.25rem;">
       <div>
         <h4 style="color:var(--accent-cyan); font-size:0.85rem; text-transform:uppercase; margin-bottom:0.4rem; letter-spacing:0.05em;">Morphologie & Position Systématique</h4>
-        <p style="line-height:1.8; font-size:0.95rem; color:#cbd5e1;"><strong>${sci}</strong>, ${vern}, se rattache au grand règne des <strong>${k}</strong>, dans l'ordre des <strong>${o}</strong> au sein de ${f} ${g}. Il présente l'ensemble des critères anatomiques diagnostiques de ce clade.</p>
+        <p style="line-height:1.8; font-size:0.95rem; color:#cbd5e1;"><strong>${sci}</strong>, ${vern}, se rattache au grand règne des <strong>${k}</strong>, dans l'ordre des <strong>${o}</strong> au sein de ${f} ${g}. Il présente l'ensemble des critères anatomiques diagnostiques de son clade.</p>
       </div>
 
       <div>
@@ -1454,7 +1449,7 @@ function populateRelatedSpecies(sp) {
   });
 }
 
-// 8. CLICHÉS PERSONNELS : RECHERCHE STRICTEMENT LOCALE
+// 8. CLICHÉS PERSONNELS : RECHERCHE LOCALEMENT ET SUR L'OBSERVATION EXACTE
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
   const sp = globalSpeciesData.find(s => String(s.id) === String(speciesId));
@@ -1474,7 +1469,7 @@ function openSpeciesPhotosModal(speciesId) {
   const grid = document.getElementById('obsPhotosModalGrid');
   grid.innerHTML = '';
 
-  // Isolation absolue : chercher uniquement les entrées du même taxon dans votre propre collection
+  // 1. Chercher toutes les entrées ayant le même nom scientifique dans data.json
   const sameObservations = globalSpeciesData.filter(s => s.scientific_name === sp.scientific_name);
   const myPhotosList = [];
 
