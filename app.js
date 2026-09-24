@@ -8,7 +8,7 @@ let currentOpenSpecies = null;
 let sheetWorldMap = null;
 let sheetWorldTileLayer = null;
 
-// IDENTIFIANT INATURALIST POUR VERROUILLER STRICTEMENT SUR TES OBSERVATIONS
+// IDENTIFIANT INATURALIST POUR VERROUILLER STRICTEMENT SUR TES CLICHÉS
 const MY_INATURALIST_USERNAME = 'zanskar'; 
 
 const vernMap = {
@@ -59,7 +59,12 @@ const vernMap = {
   'Anura': 'Grenouilles & Crapauds',
   'Urodela': 'Salamandres & Tritons',
   'Orchidaceae': 'Orchidées',
-  'Coccinellidae': 'Coccinelles'
+  'Coccinellidae': 'Coccinelles',
+  'Scoliidae': 'Scolies',
+  'Vespidae': 'Guêpes & Frelons',
+  'Geometridae': 'Géomètres',
+  'Nephilidae': 'Néphiles',
+  'Rhizostomatidae': 'Rhizostomes'
 };
 
 function normalizeStr(str) {
@@ -1158,6 +1163,7 @@ function closeSpeciesSheet() {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeSpeciesSheet();
+    closeTaxonSheet();
     closeObsPhotosModal();
   }
 });
@@ -1198,7 +1204,7 @@ function initOrUpdateWorldMap(sp) {
   }
 }
 
-// 7. MONOGRAPHIE STRUCTUREE SANS TEXTE CREUX
+// 7. MONOGRAPHIE STRUCTUREE AVEC FILTRAGE DU CONTENU CREUX
 function fetchStructuredNaturalistMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
   contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire naturaliste...`;
@@ -1337,6 +1343,12 @@ function renderFieldLocalChapters(sp) {
 
 function populateEcoDiagnostic(sp) {
   const container = document.getElementById('sheetEcoDiag');
+  const oName = sp.taxonomy.order || '';
+  const fName = sp.taxonomy.family || '';
+
+  const orderClick = oName ? `onclick="openTaxonSheet('order', '${oName}')" title="Ouvrir la présentation de l'ordre ${oName}"` : '';
+  const familyClick = fName ? `onclick="openTaxonSheet('family', '${fName}')" title="Ouvrir la présentation de la famille ${fName}"` : '';
+
   container.innerHTML = `
     <div class="sheet-info-card">
       <span class="sheet-info-lbl">Grand Pôle Biologique</span>
@@ -1344,11 +1356,15 @@ function populateEcoDiagnostic(sp) {
     </div>
     <div class="sheet-info-card">
       <span class="sheet-info-lbl">Ordre naturaliste</span>
-      <span class="sheet-info-val">${vernMap[sp.taxonomy.order] || sp.taxonomy.order || '—'}</span>
+      <span class="sheet-info-val">
+        ${oName ? `<span class="taxo-link" ${orderClick}>${vernMap[oName] || oName} ↗</span>` : '—'}
+      </span>
     </div>
     <div class="sheet-info-card">
       <span class="sheet-info-lbl">Famille</span>
-      <span class="sheet-info-val">${sp.taxonomy.family || '—'}</span>
+      <span class="sheet-info-val">
+        ${fName ? `<span class="taxo-link" ${familyClick}>${fName} ↗</span>` : '—'}
+      </span>
     </div>
     <div class="sheet-info-card">
       <span class="sheet-info-lbl">Fréquence de contact</span>
@@ -1377,10 +1393,13 @@ function populateTaxoLineage(sp) {
     const val = sp.taxonomy[r.key];
     if (val) {
       const row = document.createElement('div');
-      row.className = 'sheet-lineage-row';
+      row.className = 'sheet-lineage-row clickable';
+      row.onclick = () => openTaxonSheet(r.key, val);
+      row.title = `Ouvrir la présentation du taxon ${val}`;
+
       row.innerHTML = `
         <span class="sheet-lineage-rank">${r.label}</span>
-        <span class="sheet-lineage-name">${val}</span>
+        <span class="sheet-lineage-name">${val} ↗</span>
         <span class="sheet-lineage-vern">${vernMap[val] || ''}</span>
       `;
       container.appendChild(row);
@@ -1452,7 +1471,83 @@ function populateRelatedSpecies(sp) {
   });
 }
 
-// 8. CLICHÉS PERSONNELS VERROUILLÉS SUR TON COMPTE INATURALIST "ZANSKAR"
+// ========================================================
+// 8. SUPER-FICHE DE RANG SUPÉRIEUR (FAMILLE / ORDRE / GENRE)
+// ========================================================
+function openTaxonSheet(rankKey, rankName) {
+  if (!globalSpeciesData || !rankName) return;
+
+  const overlay = document.getElementById('taxonSheetOverlay');
+  
+  // Trouve toutes les espèces de ta collection appartenant à ce rang
+  let matchingSpecies = globalSpeciesData.filter(s => {
+    return s.taxonomy && s.taxonomy[rankKey] === rankName;
+  });
+
+  if (matchingSpecies.length === 0) {
+    matchingSpecies = globalSpeciesData.filter(s => {
+      return (s.taxonomy.family === rankName) || (s.taxonomy.order === rankName) || (s.taxonomy.genus === rankName);
+    });
+  }
+
+  // Choisir la photo la plus qualitative (ou la plus observée) comme image d'affiche
+  const representativeSp = matchingSpecies.find(s => s.photo_url) || matchingSpecies[0];
+  const photoUrl = representativeSp ? representativeSp.photo_url : 'https://via.placeholder.com/900x900/080c14/475569?text=?';
+
+  document.getElementById('taxonHeroImg').src = photoUrl;
+  document.getElementById('taxonPhotoCredit').innerText = representativeSp ? `Spécimen illustré : ${representativeSp.scientific_name}` : 'Rang systématique';
+
+  // Métadonnées
+  const rankLabels = {
+    'kingdom': 'Règne',
+    'phylum': 'Embranchement',
+    'class': 'Classe',
+    'order': 'Ordre',
+    'family': 'Famille',
+    'genus': 'Genre'
+  };
+
+  document.getElementById('taxonRankBadge').innerText = rankLabels[rankKey] || 'Taxon';
+  document.getElementById('taxonTitleSci').innerText = rankName;
+  document.getElementById('taxonTitleVern').innerText = vernMap[rankName] ? `(${vernMap[rankName]})` : '';
+
+  const spCount = getSpeciesOnlyCount(matchingSpecies);
+  const totalObs = getTotalObservationsCount(matchingSpecies);
+  document.getElementById('taxonStatsBadge').innerText = `${spCount} espèce(s) • ${totalObs} relevé(s)`;
+
+  // Génération de la notice naturaliste du rang
+  const wikiBox = document.getElementById('taxonWikiContent');
+  wikiBox.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de la notice du groupe...`;
+
+  queryWikipediaText(rankName, (text) => {
+    if (isValidNaturalistText(text)) {
+      let clean = text.replace(/==+.*?==+/g, '').replace(/\s+/g, ' ').trim();
+      const paras = clean.split('. ').slice(0, 5).join('. ') + '.';
+      wikiBox.innerHTML = `<p style="line-height:1.8; color:#cbd5e1;">${paras}</p>`;
+    } else {
+      wikiBox.innerHTML = `<p style="line-height:1.8; color:#cbd5e1;">Le clade des <strong>${rankName}</strong> ${vernMap[rankName] ? '(' + vernMap[rankName] + ')' : ''} regroupe dans votre inventaire <strong>${spCount} espèce(s)</strong> et un total de <strong>${totalObs} observation(s)</strong> réparties sur l'ensemble de vos stations de terrain.</p>`;
+    }
+  });
+
+  // Mosaïque des espèces de ce rang
+  document.getElementById('taxonSpeciesGridTitle').innerText = `Toutes vos espèces de ${rankLabels[rankKey] || 'ce taxon'} (${matchingSpecies.length})`;
+  const grid = document.getElementById('taxonSpeciesGrid');
+  grid.innerHTML = '';
+
+  matchingSpecies.forEach(sp => {
+    grid.appendChild(createOriginalGalleryCard(sp));
+  });
+
+  overlay.classList.add('active');
+}
+
+function closeTaxonSheet() {
+  document.getElementById('taxonSheetOverlay').classList.remove('active');
+}
+
+// ========================================================
+// 9. CLICHÉS PERSONNELS VERROUILLÉS SUR TON COMPTE INATURALIST "ZANSKAR"
+// ========================================================
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
   const sp = globalSpeciesData.find(s => String(s.id) === String(speciesId));
@@ -1496,7 +1591,7 @@ function openSpeciesPhotosModal(speciesId) {
     });
   }
 
-  // 1. Cliché principal de départ
+  // 1. Cliché principal
   const myPhotosList = [];
   if (sp.photo_url) {
     myPhotosList.push({
@@ -1506,7 +1601,7 @@ function openSpeciesPhotosModal(speciesId) {
     });
   }
 
-  // 2. Requête iNaturalist verrouillée sur user_id=zanskar et taxon_id=sp.id
+  // 2. Recherche sur TOUTES les observations iNaturalist de ZANSKAR pour cette espèce
   if (sp.id && !isNaN(sp.id)) {
     const userFilter = MY_INATURALIST_USERNAME ? `&user_id=${encodeURIComponent(MY_INATURALIST_USERNAME)}` : '';
     fetch(`https://api.inaturalist.org/v1/observations?taxon_id=${sp.id}${userFilter}&per_page=30&photos=true`)
