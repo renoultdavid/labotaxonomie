@@ -369,9 +369,7 @@ body {
 
 .btn-view-toggle.active { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); }
 
-/* ========================================================
-   LA GRILLE STRICTE ET SES VIGNETTES CARRÉES
-   ======================================================== */
+/* GRILLE STRICTE ET SES VIGNETTES CARRÉES */
 .results-content-wrap {
   flex: 1;
   overflow-y: auto;
@@ -580,7 +578,7 @@ body {
 .podium-score { font-size: 0.8rem; font-weight: 700; color: var(--accent-emerald); }
 
 /* ========================================================
-   SUPER-FICHE ESPÈCE : FORMAT SPLIT 50/50 ÉLARGI
+   SUPER-FICHE ESPÈCE : SPLIT 50/50 ÉLARGI
    ======================================================== */
 .species-sheet-overlay {
   position: fixed;
@@ -649,7 +647,7 @@ body {
   overflow: hidden;
 }
 
-/* VOLET GAUCHE (50%) : PHOTO PURE EN MAJESTÉ */
+/* VOLET GAUCHE (50%) : PHOTO PURE SANS TEXTE */
 .sheet-left-photo-pane {
   flex: 1;
   width: 50%;
@@ -742,6 +740,7 @@ body {
   font-weight: 600;
 }
 
+/* Onglets */
 .sheet-nav-tabs {
   background: #060910;
   border-bottom: 1px solid var(--border);
@@ -763,6 +762,7 @@ body {
   border-bottom: 2px solid transparent;
   white-space: nowrap;
   transition: all 0.2s;
+  font-family: inherit;
 }
 
 .sheet-tab-btn:hover { color: #fff; }
@@ -800,6 +800,12 @@ body {
   background: var(--border);
 }
 
+/* UNIFORMISATION STRICTE DE LA TYPOGRAPHIE NATURELLE */
+.sheet-wiki-box,
+.sheet-wiki-box * {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
 .sheet-wiki-box {
   background: #05070c;
   border: 1px solid var(--border);
@@ -810,7 +816,16 @@ body {
   color: var(--text-muted);
 }
 
-.sheet-wiki-box p { margin-bottom: 0.9rem; }
+.sheet-wiki-box h4 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+.sheet-wiki-box p {
+  margin-bottom: 0.9rem;
+  line-height: 1.8;
+  color: #cbd5e1;
+}
+
 .sheet-wiki-box p:last-child { margin-bottom: 0; }
 
 .sheet-diag-grid,
@@ -858,6 +873,7 @@ body {
   width: fit-content;
   margin-top: 0.25rem;
   transition: all 0.15s;
+  font-family: inherit;
 }
 
 .btn-open-photos-modal:hover {
@@ -877,6 +893,7 @@ body {
   font-size: 0.8rem;
   font-weight: 700;
   text-decoration: none;
+  font-family: inherit;
 }
 
 .btn-open-drive-folder:hover {
@@ -884,7 +901,6 @@ body {
   color: #020408;
 }
 
-/* CARTE MONDIALE DANS LA FICHE */
 .sheet-world-map-container {
   width: 100%;
   height: 380px;
@@ -951,7 +967,6 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Modale de la mosaïque des clichés de l'espèce */
 .obs-photos-modal {
   position: fixed;
   inset: 0;
@@ -1005,7 +1020,6 @@ body {
   background: #04060a;
 }
 
-/* RESPONSIVE IPAD VERTICAL & MOBILES */
 @media (max-width: 900px) {
   #homeScreen { flex-direction: column; }
   .home-pane { border-right: none; border-bottom: 1px solid var(--border); padding: 2rem; }
