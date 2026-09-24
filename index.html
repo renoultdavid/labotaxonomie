@@ -9,9 +9,12 @@
       --bg-deep: #05070b;
       --panel-bg: #090e17;
       --card-bg: #101623;
+      --card-hover: #162032;
       --border: rgba(255, 255, 255, 0.09);
+      --border-focus: #38bdf8;
       --accent-cyan: #38bdf8;
       --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
       --text-main: #f8fafc;
       --text-muted: #cbd5e1;
       --text-dim: #94a3b8;
@@ -35,7 +38,7 @@
     }
 
     /* ========================================================
-       ACCUEIL : DOUBLE VOLET SPLIT 50/50 PLEIN ÉCRAN (COVER)
+       ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF
        ======================================================== */
     #homeScreen {
       position: absolute;
@@ -69,7 +72,6 @@
       border-right: none;
     }
 
-    /* Fond immersif bord à bord */
     .pane-bg {
       position: absolute;
       inset: 0;
@@ -80,17 +82,14 @@
       filter: brightness(0.9);
     }
 
-    /* Volet 1 : Recherche d'Espèce */
     #pane1 .pane-bg {
       background-image: url('https://lh3.googleusercontent.com/d/1J9Aoq3Fy_pQBz6_B-zi_Bj0YCGzywmQy');
     }
 
-    /* Volet 2 : Observations & Statistiques */
     #pane2 .pane-bg {
       background-image: url('https://lh3.googleusercontent.com/d/1CNPoOIwnobaVzafiIXPdmcoYt2LRViWt');
     }
 
-    /* Dégradé sombre et fondu cinématographique */
     .pane-overlay {
       position: absolute;
       inset: 0;
@@ -105,7 +104,6 @@
       transition: background 0.35s ease;
     }
 
-    /* Contenu textuel sur l'image */
     .pane-content {
       position: relative;
       z-index: 3;
@@ -139,7 +137,6 @@
       opacity: 0.4;
     }
 
-    /* Ligne de titre avec bouton pulsant */
     .title-row {
       display: flex;
       align-items: center;
@@ -155,7 +152,6 @@
       text-shadow: 0 4px 18px rgba(0, 0, 0, 0.8);
     }
 
-    /* Bouton Pulsant Lumineux */
     .pulse-btn {
       position: relative;
       width: 38px;
@@ -193,18 +189,9 @@
     }
 
     @keyframes pulseWave {
-      0% {
-        transform: scale(0.9);
-        opacity: 0.85;
-      }
-      70% {
-        transform: scale(1.6);
-        opacity: 0;
-      }
-      100% {
-        transform: scale(1.6);
-        opacity: 0;
-      }
+      0% { transform: scale(0.9); opacity: 0.85; }
+      70% { transform: scale(1.6); opacity: 0; }
+      100% { transform: scale(1.6); opacity: 0; }
     }
 
     .pulse-icon {
@@ -238,34 +225,13 @@
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     }
 
-    /* Effets de survol / interaction */
     @media (hover: hover) {
-      .home-pane:hover {
-        flex: 1.15;
-      }
-      .home-pane:hover .pane-bg {
-        transform: scale(1.04);
-        filter: brightness(1.05);
-      }
-      .home-pane:hover .pulse-btn {
-        transform: scale(1.1);
-        background: var(--accent-cyan);
-        color: #03141f;
-      }
-      #pane2:hover .pulse-btn {
-        background: var(--accent-emerald);
-        color: #021a10;
-      }
-      .home-pane:hover .pane-cta {
-        background: var(--accent-cyan);
-        color: #03141f;
-        border-color: var(--accent-cyan);
-      }
-      #pane2:hover .pane-cta {
-        background: var(--accent-emerald);
-        color: #021a10;
-        border-color: var(--accent-emerald);
-      }
+      .home-pane:hover { flex: 1.15; }
+      .home-pane:hover .pane-bg { transform: scale(1.04); filter: brightness(1.05); }
+      .home-pane:hover .pulse-btn { transform: scale(1.1); background: var(--accent-cyan); color: #03141f; }
+      #pane2:hover .pulse-btn { background: var(--accent-emerald); color: #021a10; }
+      .home-pane:hover .pane-cta { background: var(--accent-cyan); color: #03141f; border-color: var(--accent-cyan); }
+      #pane2:hover .pane-cta { background: var(--accent-emerald); color: #021a10; border-color: var(--accent-emerald); }
     }
 
     /* ========================================================
@@ -377,12 +343,254 @@
       inset: 0;
       display: none;
       flex-direction: column;
-      padding: 2rem;
-      overflow-y: auto;
+      overflow: hidden;
     }
 
     .module-view.active { display: flex; }
 
+    /* ========================================================
+       MODULE 1 - ONGLET 1 : RECHERCHE EXPERT CLADISTIQUE
+       ======================================================== */
+    .expert-workspace {
+      flex: 1;
+      display: flex;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Volet gauche de l'arbre expert */
+    .expert-tree-pane {
+      width: 420px;
+      background: #080c14;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .tree-filter-bar {
+      padding: 0.85rem 1rem;
+      background: #0b101a;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .tree-search-input {
+      width: 100%;
+      background: #05070c;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      color: var(--text-main);
+      font-size: 0.825rem;
+      outline: none;
+    }
+
+    .tree-search-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    .tree-stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.725rem;
+      color: var(--text-dim);
+    }
+
+    .expert-tree-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.825rem;
+    }
+
+    .taxo-node {
+      margin-bottom: 0.2rem;
+    }
+
+    .taxo-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .taxo-label:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+    }
+
+    .taxo-label.active {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+      font-weight: 600;
+    }
+
+    .taxo-names {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .taxo-latin {
+      font-style: italic;
+      font-weight: 600;
+    }
+
+    .taxo-vern {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-style: normal;
+    }
+
+    .taxo-badge {
+      font-size: 0.7rem;
+      background: #04060a;
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .taxo-children {
+      margin-left: 1rem;
+      border-left: 1px dashed rgba(255, 255, 255, 0.1);
+      padding-left: 0.4rem;
+      display: none;
+    }
+
+    .taxo-children.open {
+      display: block;
+    }
+
+    /* Volet droit : Résultats d'espèces */
+    .expert-results-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #06080e;
+      overflow: hidden;
+    }
+
+    .results-subbar {
+      height: 48px;
+      background: #090e17;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.25rem;
+      font-size: 0.8rem;
+    }
+
+    .results-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .species-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    .species-row:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-cyan);
+      transform: translateX(3px);
+    }
+
+    .species-left {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      overflow: hidden;
+    }
+
+    .species-mini-thumb {
+      width: 46px;
+      height: 46px;
+      border-radius: 6px;
+      background: #020408;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .species-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      overflow: hidden;
+    }
+
+    .species-latin {
+      font-style: italic;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .species-vernacular {
+      font-size: 0.775rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .species-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .species-drive-badge {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--accent-emerald);
+      font-size: 0.65rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .btn-open-fiche {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--accent-cyan);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Placeholders des autres vues */
     .view-placeholder {
       display: flex;
       flex-direction: column;
@@ -414,12 +622,16 @@
         padding: 2rem;
       }
       .pane-title { font-size: 1.8rem; }
+      .expert-workspace { flex-direction: column; }
+      .expert-tree-pane { width: 100%; height: 45%; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF -->
+  <!-- ========================================================
+       ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF
+       ======================================================== -->
   <div id="homeScreen">
     
     <!-- Volet 1 : Recherche d'Espèce -->
@@ -434,7 +646,7 @@
             <span class="pulse-icon">→</span>
           </div>
         </div>
-        <p class="pane-desc">Explorez le vivant par l'arbre taxonomique strict, la cartographie géographique 2D par zones ou la galerie visuelle intuitive.</p>
+        <p class="pane-desc">Explorer le vivant par l'arbre taxonomique strict, la cartographie géographique 2D par zones ou la galerie visuelle intuitive.</p>
         <div class="pane-cta">
           <span>Ouvrir l'explorateur</span>
           <span>→</span>
@@ -454,7 +666,7 @@
             <span class="pulse-icon">→</span>
           </div>
         </div>
-        <p class="pane-desc">Consultez l'ensemble des planches de terrain, triez vos observations et analysez la complétude et la biodiversité de votre collection.</p>
+        <p class="pane-desc">Explorer les planches de terrain, trier les observations et analyser la biodiversité de la collection.</p>
         <div class="pane-cta">
           <span>Accéder aux données</span>
           <span>→</span>
@@ -464,7 +676,9 @@
 
   </div>
 
-  <!-- MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS) -->
+  <!-- ========================================================
+       MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS)
+       ======================================================== -->
   <div class="app-module" id="module1">
     <div class="module-topbar">
       <div class="module-nav-left">
@@ -480,24 +694,53 @@
     </div>
 
     <div class="module-view-stack">
+      <!-- Vue 1.1 : Recherche Expert Cladistique Active -->
       <div class="module-view active" id="view1-0">
-        <div class="view-placeholder">
-          <h3>Onglet 1 : Recherche Expert Cladistique</h3>
-          <p>Arbre taxonomique strict affichant les binômes latins, noms vernaculaires et compteurs d'espèces.</p>
+        <div class="expert-workspace">
+          
+          <!-- Volet gauche de l'arbre cladistique -->
+          <div class="expert-tree-pane">
+            <div class="tree-filter-bar">
+              <input type="text" id="expertTreeSearch" class="tree-search-input" placeholder="Rechercher (latin, français, famille)..." />
+              <div class="tree-stats-row">
+                <span id="treeStatusLabel">Arbre taxonomique complet</span>
+                <span id="treeTotalCount" style="color: var(--accent-cyan); font-weight: 700;">—</span>
+              </div>
+            </div>
+            <div class="expert-tree-scroll" id="expertTreeContainer">
+              <!-- Nœuds générés de façon progressive -->
+            </div>
+          </div>
+
+          <!-- Volet droit des espèces associées -->
+          <div class="expert-results-pane">
+            <div class="results-subbar">
+              <div id="resultsFilterTitle" style="color: var(--text-muted); font-weight: 600;">Sélectionnez une branche ou tapez une recherche</div>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <span id="resultsCountBadge" style="color: var(--text-dim); font-size: 0.75rem;">0 espèce</span>
+              </div>
+            </div>
+            <div class="results-list" id="expertResultsList">
+              <!-- Lignes d'espèces générées sans saccade -->
+            </div>
+          </div>
+
         </div>
       </div>
 
+      <!-- Vue 1.2 : Géographie 2D -->
       <div class="module-view" id="view1-1">
         <div class="view-placeholder">
           <h3>Onglet 2 : Recherche Géographique 2D</h3>
-          <p>Carte interactive avec clusters d'un côté et vignettes d'espèces de l'autre.</p>
+          <p>Carte interactive par clusters colorés (mammifères, oiseaux, insectes...) scindée avec les vignettes d'espèces.</p>
         </div>
       </div>
 
+      <!-- Vue 1.3 : Recherche Visuelle -->
       <div class="module-view" id="view1-2">
         <div class="view-placeholder">
           <h3>Onglet 3 : Recherche par Images</h3>
-          <p>Exploration visuelle par grands groupes illustrés sans jargon technique.</p>
+          <p>Navigation simplifiée par grands groupes illustrés pour les débutants (Mammifères → Félins...).</p>
         </div>
       </div>
     </div>
@@ -521,7 +764,7 @@
       <div class="module-view active" id="view2-0">
         <div class="view-placeholder">
           <h3>Onglet 1 : Mosaïque des Observations</h3>
-          <p>Ensemble des observations de terrain avec options de tri chronologique et alphabétique.</p>
+          <p>Ensemble des observations de terrain avec tri chronologique et alphabétique.</p>
         </div>
       </div>
 
@@ -536,16 +779,38 @@
 
   <script>
     let globalSpeciesData = null;
+    let expertCurrentSelection = { rank: null, value: null };
+    let vernMap = {
+      'Animalia': 'Animaux',
+      'Plantae': 'Végétaux',
+      'Fungi': 'Champignons',
+      'Arthropoda': 'Arthropodes',
+      'Chordata': 'Chordés',
+      'Mollusca': 'Mollusques',
+      'Insecta': 'Insectes',
+      'Arachnida': 'Arachnides',
+      'Aves': 'Oiseaux',
+      'Mammalia': 'Mammifères',
+      'Reptilia': 'Reptiles',
+      'Amphibia': 'Amphibiens',
+      'Lepidoptera': 'Papillons',
+      'Coleoptera': 'Coléoptères',
+      'Araneae': 'Araignées',
+      'Odonata': 'Libellules & Demoiselles',
+      'Hymenoptera': 'Abeilles, Guêpes & Fourmis',
+      'Diptera': 'Mouches & Moustiques',
+      'Hemiptera': 'Punaises & Cigales'
+    };
 
+    // Chargement différé
     fetch('data.json')
       .then(res => res.json())
       .then(data => {
         globalSpeciesData = data;
-        console.log(`Données prêtes en tâche de fond : ${data.length} taxons.`);
+        document.getElementById('treeTotalCount').innerText = `${data.length.toLocaleString('fr-FR')} espèces`;
+        initExpertTree();
       })
-      .catch(err => {
-        console.warn('data.json...', err);
-      });
+      .catch(err => console.warn('data.json...', err));
 
     function openModule(moduleId) {
       document.getElementById('homeScreen').classList.add('hidden');
@@ -564,6 +829,223 @@
       const views = module.querySelectorAll('.module-view');
       views.forEach((view, idx) => view.classList.toggle('active', idx === tabIndex));
     }
+
+    // ========================================================
+    // LOGIQUE OPTIMISÉE POUR L'ONGLET EXPERT (ZERO SACCADE CPU)
+    // ========================================================
+    function initExpertTree() {
+      if (!globalSpeciesData) return;
+      const treeContainer = document.getElementById('expertTreeContainer');
+      treeContainer.innerHTML = '';
+
+      // Structure allégée : Règne -> Embranchement -> Ordre
+      const tree = {};
+      globalSpeciesData.forEach(sp => {
+        const k = sp.taxonomy.kingdom || 'Incertae sedis';
+        const p = sp.taxonomy.phylum || 'Embranchement indét.';
+        const o = sp.taxonomy.order || 'Ordre indét.';
+
+        if (!tree[k]) tree[k] = { count: 0, phyla: {} };
+        tree[k].count++;
+
+        if (!tree[k].phyla[p]) tree[k].phyla[p] = { count: 0, orders: {} };
+        tree[k].phyla[p].count++;
+
+        if (!tree[k].phyla[p].orders[o]) tree[k].phyla[p].orders[o] = 0;
+        tree[k].phyla[p].orders[o]++;
+      });
+
+      // Construction du DOM par fragment (soulage l'iPad)
+      const fragment = document.createDocumentFragment();
+
+      Object.keys(tree).sort().forEach(k => {
+        const kNode = document.createElement('div');
+        kNode.className = 'taxo-node';
+
+        const kLabel = document.createElement('div');
+        kLabel.className = 'taxo-label';
+        kLabel.innerHTML = `
+          <div class="taxo-names">
+            <span class="taxo-latin">${k}</span>
+            <span class="taxo-vern">${vernMap[k] || ''}</span>
+          </div>
+          <span class="taxo-badge">${tree[k].count}</span>
+        `;
+
+        const kChildren = document.createElement('div');
+        kChildren.className = 'taxo-children';
+
+        Object.keys(tree[k].phyla).sort().forEach(p => {
+          const pNode = document.createElement('div');
+          pNode.className = 'taxo-node';
+
+          const pLabel = document.createElement('div');
+          pLabel.className = 'taxo-label';
+          pLabel.innerHTML = `
+            <div class="taxo-names">
+              <span class="taxo-latin">${p}</span>
+              <span class="taxo-vern">${vernMap[p] || ''}</span>
+            </div>
+            <span class="taxo-badge">${tree[k].phyla[p].count}</span>
+          `;
+
+          const pChildren = document.createElement('div');
+          pChildren.className = 'taxo-children';
+
+          Object.keys(tree[k].phyla[p].orders).sort().forEach(o => {
+            const oLabel = document.createElement('div');
+            oLabel.className = 'taxo-label';
+            oLabel.innerHTML = `
+              <div class="taxo-names">
+                <span class="taxo-latin">${o}</span>
+                <span class="taxo-vern">${vernMap[o] || ''}</span>
+              </div>
+              <span class="taxo-badge">${tree[k].phyla[p].orders[o]}</span>
+            `;
+
+            oLabel.onclick = (e) => {
+              e.stopPropagation();
+              highlightLabel(oLabel);
+              renderExpertSpecies('order', o);
+            };
+
+            pChildren.appendChild(oLabel);
+          });
+
+          pLabel.onclick = (e) => {
+            e.stopPropagation();
+            pChildren.classList.toggle('open');
+            highlightLabel(pLabel);
+            renderExpertSpecies('phylum', p);
+          };
+
+          pNode.appendChild(pLabel);
+          pNode.appendChild(pChildren);
+          kChildren.appendChild(pNode);
+        });
+
+        kLabel.onclick = (e) => {
+          e.stopPropagation();
+          kChildren.classList.toggle('open');
+          highlightLabel(kLabel);
+          renderExpertSpecies('kingdom', k);
+        };
+
+        kNode.appendChild(kLabel);
+        kNode.appendChild(kChildren);
+        fragment.appendChild(kNode);
+      });
+
+      treeContainer.appendChild(fragment);
+
+      // Par défaut, afficher les premiers spécimens
+      renderExpertSpecies(null, null);
+    }
+
+    function highlightLabel(labelEl) {
+      document.querySelectorAll('.taxo-label').forEach(l => l.classList.remove('active'));
+      labelEl.classList.add('active');
+    }
+
+    function renderExpertSpecies(rank, value) {
+      if (!globalSpeciesData) return;
+      expertCurrentSelection = { rank, value };
+
+      const listContainer = document.getElementById('expertResultsList');
+      listContainer.innerHTML = '';
+
+      let results = globalSpeciesData;
+      if (rank && value) {
+        results = results.filter(sp => sp.taxonomy[rank] === value);
+        document.getElementById('resultsFilterTitle').innerText = `${rank.toUpperCase()} : ${value} ${vernMap[value] ? '(' + vernMap[value] + ')' : ''}`;
+      } else {
+        document.getElementById('resultsFilterTitle').innerText = 'Ensemble des espèces répertoriées';
+      }
+
+      document.getElementById('resultsCountBadge').innerText = `${results.length.toLocaleString('fr-FR')} espèce(s)`;
+
+      // Affichage limité à 100 lignes par page pour un défilement à 60 fps
+      const slice = results.slice(0, 100);
+      const fragment = document.createDocumentFragment();
+
+      slice.forEach(sp => {
+        const row = document.createElement('div');
+        row.className = 'species-row';
+        row.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
+
+        const thumb = sp.photo_url || 'https://via.placeholder.com/80x80/080c14/475569?text=?';
+        const driveBadge = sp.drive_folder_id ? `<span class="species-drive-badge">DRIVE</span>` : '';
+
+        row.innerHTML = `
+          <div class="species-left">
+            <img class="species-mini-thumb" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
+            <div class="species-text">
+              <span class="species-latin">${sp.scientific_name}</span>
+              <span class="species-vernacular">${sp.common_name || sp.taxonomy.family || 'Taxon validé'}</span>
+            </div>
+          </div>
+          <div class="species-meta">
+            ${driveBadge}
+            <button class="btn-open-fiche">Fiche</button>
+          </div>
+        `;
+        fragment.appendChild(row);
+      });
+
+      listContainer.appendChild(fragment);
+    }
+
+    // Moteur de recherche de l'arbre expert
+    document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!globalSpeciesData) return;
+
+      if (!q) {
+        renderExpertSpecies(null, null);
+        return;
+      }
+
+      const matches = globalSpeciesData.filter(sp => {
+        const sci = sp.scientific_name.toLowerCase();
+        const vern = (sp.common_name || '').toLowerCase();
+        const fam = (sp.taxonomy.family || '').toLowerCase();
+        const ord = (sp.taxonomy.order || '').toLowerCase();
+        return sci.includes(q) || vern.includes(q) || fam.includes(q) || ord.includes(q);
+      });
+
+      document.getElementById('resultsFilterTitle').innerText = `Recherche : "${q}"`;
+      document.getElementById('resultsCountBadge').innerText = `${matches.length.toLocaleString('fr-FR')} résultat(s)`;
+
+      const listContainer = document.getElementById('expertResultsList');
+      listContainer.innerHTML = '';
+      const fragment = document.createDocumentFragment();
+
+      matches.slice(0, 100).forEach(sp => {
+        const row = document.createElement('div');
+        row.className = 'species-row';
+        row.onclick = () => alert(`Super-Fiche pour : ${sp.scientific_name}`);
+
+        const thumb = sp.photo_url || 'https://via.placeholder.com/80x80/080c14/475569?text=?';
+        const driveBadge = sp.drive_folder_id ? `<span class="species-drive-badge">DRIVE</span>` : '';
+
+        row.innerHTML = `
+          <div class="species-left">
+            <img class="species-mini-thumb" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
+            <div class="species-text">
+              <span class="species-latin">${sp.scientific_name}</span>
+              <span class="species-vernacular">${sp.common_name || sp.taxonomy.family || 'Taxon validé'}</span>
+            </div>
+          </div>
+          <div class="species-meta">
+            ${driveBadge}
+            <button class="btn-open-fiche">Fiche</button>
+          </div>
+        `;
+        fragment.appendChild(row);
+      });
+
+      listContainer.appendChild(fragment);
+    });
   </script>
 </body>
 </html>
