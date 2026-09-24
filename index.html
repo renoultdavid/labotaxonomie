@@ -97,7 +97,7 @@
         <div class="geo-workspace">
           <div class="geo-header-controls">
             <div class="geo-search-bar">
-              <input type="text" id="geoFreeSearch" class="geo-search-input" placeholder="Filtrer la carte par nom, famille, lieu (ex: éponge, Ophrys, Cetacea)..." />
+              <input type="text" id="geoFreeSearch" class="geo-search-input" placeholder="Filtrer la carte par nom, famille, lieu..." />
               <button id="geoResetSearchBtn" class="btn-back-home" style="padding: 0.45rem 0.75rem;">Effacer</button>
             </div>
 
@@ -243,9 +243,10 @@
           <!-- Onglets Tiroirs -->
           <div class="sheet-nav-tabs">
             <button class="sheet-tab-btn active" onclick="switchSheetTab(0)">📖 Monographie</button>
-            <button class="sheet-tab-btn" onclick="switchSheetTab(1)">🏛️ Lignée Cladistique</button>
-            <button class="sheet-tab-btn" onclick="switchSheetTab(2)">📍 Données Terrain</button>
-            <button class="sheet-tab-btn" onclick="switchSheetTab(3)">🌿 Apparentés</button>
+            <button class="sheet-tab-btn" onclick="switchSheetTab(1)">🌍 Répartition Mondiale</button>
+            <button class="sheet-tab-btn" onclick="switchSheetTab(2)">🏛️ Lignée Cladistique</button>
+            <button class="sheet-tab-btn" onclick="switchSheetTab(3)">📍 Données Terrain</button>
+            <button class="sheet-tab-btn" onclick="switchSheetTab(4)">🌿 Apparentés</button>
           </div>
 
           <!-- Contenu des Tiroirs Défilant -->
@@ -261,20 +262,28 @@
               <div class="sheet-diag-grid" id="sheetEcoDiag"></div>
             </div>
 
-            <!-- 1. Cladistique -->
+            <!-- 1. Répartition Mondiale -->
             <div class="sheet-drawer" id="sheetDrawer-1">
+              <div class="sheet-section-title">Distribution biogéographique globale (iNaturalist / GBIF)</div>
+              <div class="sheet-world-map-container" id="sheetWorldMapContainer">
+                <div id="sheetWorldMapLeaflet"></div>
+              </div>
+            </div>
+
+            <!-- 2. Cladistique -->
+            <div class="sheet-drawer" id="sheetDrawer-2">
               <div class="sheet-section-title">Classification systématique (Règne à Espèce)</div>
               <div class="sheet-lineage-list" id="sheetTaxoLineage"></div>
             </div>
 
-            <!-- 2. Terrain -->
-            <div class="sheet-drawer" id="sheetDrawer-2">
+            <!-- 3. Terrain -->
+            <div class="sheet-drawer" id="sheetDrawer-3">
               <div class="sheet-section-title">Relevés de la collection</div>
               <div class="sheet-field-grid" id="sheetFieldData"></div>
             </div>
 
-            <!-- 3. Apparentés -->
-            <div class="sheet-drawer" id="sheetDrawer-3">
+            <!-- 4. Apparentés -->
+            <div class="sheet-drawer" id="sheetDrawer-4">
               <div class="sheet-section-title" id="sheetRelatedTitle">Taxons apparentés dans la collection</div>
               <div class="results-gallery-mode" id="sheetRelatedGrid"></div>
             </div>
@@ -292,10 +301,13 @@
     <div class="obs-photos-modal-card">
       <div class="obs-photos-modal-header">
         <div>
-          <div style="font-size:0.75rem; text-transform:uppercase; color:var(--accent-emerald); font-weight:800;">Toutes les observations de l'espèce</div>
+          <div style="font-size:0.75rem; text-transform:uppercase; color:var(--accent-emerald); font-weight:800;">Clichés de l'espèce (cliquer pour agrandir à gauche)</div>
           <div class="obs-photos-modal-title" id="obsPhotosModalTitle">Spécimens</div>
         </div>
-        <button class="sheet-close-btn" style="position:static;" onclick="closeObsPhotosModal()">&times;</button>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <a id="driveFolderDirectLink" href="#" target="_blank" class="btn-open-drive-folder" style="display:none;">📁 Dossier Drive HD</a>
+          <button class="sheet-close-btn" style="position:static;" onclick="closeObsPhotosModal()">&times;</button>
+        </div>
       </div>
       <div class="obs-photos-modal-grid" id="obsPhotosModalGrid"></div>
     </div>
