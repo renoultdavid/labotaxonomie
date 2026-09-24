@@ -482,7 +482,7 @@ body {
   pointer-events: none;
 }
 
-/* Mode Liste (Optionnel) */
+/* Mode Liste */
 .results-list-mode { display: flex; flex-direction: column; gap: 0.5rem; }
 .species-row { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.85rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
 .species-row:hover { background: var(--card-hover); border-color: var(--accent-cyan); }
@@ -580,12 +580,12 @@ body {
 .podium-score { font-size: 0.8rem; font-weight: 700; color: var(--accent-emerald); }
 
 /* ========================================================
-   SUPER-FICHE ESPÈCE : NOUVEAU FORMAT SPLIT 50/50 ÉLARGI
+   SUPER-FICHE ESPÈCE : FORMAT SPLIT 50/50 ÉLARGI
    ======================================================== */
 .species-sheet-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(2, 4, 8, 0.9);
+  background: rgba(2, 4, 8, 0.92);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   z-index: 9999;
@@ -604,7 +604,7 @@ body {
 
 .species-sheet-modal {
   width: 96vw;
-  max-width: 1650px; /* Plein écran noble sur Mac 27 pouces */
+  max-width: 1650px;
   height: 92vh;
   background: #090e17;
   border: 1px solid rgba(56, 189, 248, 0.35);
@@ -642,7 +642,6 @@ body {
   transform: scale(1.08);
 }
 
-/* LE CONTENEUR SPLIT 50/50 */
 .sheet-split-container {
   flex: 1;
   display: flex;
@@ -650,7 +649,7 @@ body {
   overflow: hidden;
 }
 
-/* VOLET GAUCHE (50%) : PHOTO PURE EN MAJESTÉ SANS DÉGRADÉ NI TEXTE */
+/* VOLET GAUCHE (50%) : PHOTO PURE EN MAJESTÉ */
 .sheet-left-photo-pane {
   flex: 1;
   width: 50%;
@@ -667,7 +666,7 @@ body {
 .sheet-pure-photo {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* Photo entière visible sans recadrage agressif */
+  object-fit: contain;
   background: #020306;
   display: block;
 }
@@ -683,7 +682,6 @@ body {
   overflow: hidden;
 }
 
-/* Bandeau identité supérieur droit */
 .sheet-header-identity {
   padding: 1.75rem 2rem 1.25rem 2rem;
   background: #090e17;
@@ -744,7 +742,6 @@ body {
   font-weight: 600;
 }
 
-/* Barre d'onglets tiroirs */
 .sheet-nav-tabs {
   background: #060910;
   border-bottom: 1px solid var(--border);
@@ -774,7 +771,6 @@ body {
   border-bottom-color: var(--accent-cyan);
 }
 
-/* L'ascenseur de la colonne droite */
 .sheet-drawers-scroll {
   flex: 1;
   overflow-y: auto;
@@ -804,7 +800,6 @@ body {
   background: var(--border);
 }
 
-/* Texte encyclopédique & monographique riche */
 .sheet-wiki-box {
   background: #05070c;
   border: 1px solid var(--border);
@@ -868,6 +863,41 @@ body {
 .btn-open-photos-modal:hover {
   background: var(--accent-emerald);
   color: #021a10;
+}
+
+.btn-open-drive-folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: var(--accent-cyan);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.btn-open-drive-folder:hover {
+  background: var(--accent-cyan);
+  color: #020408;
+}
+
+/* CARTE MONDIALE DANS LA FICHE */
+.sheet-world-map-container {
+  width: 100%;
+  height: 380px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #03060a;
+  position: relative;
+}
+
+#sheetWorldMapLeaflet {
+  width: 100%;
+  height: 100%;
 }
 
 .sheet-lineage-list {
@@ -986,7 +1016,6 @@ body {
   .stat-grid-2x2 { grid-template-columns: 1fr; }
   .stat-kpi-banner { grid-template-columns: 1fr 1fr; }
   
-  /* Basculement vertical de la fiche sur petit écran */
   .species-sheet-modal { height: 96vh; width: 96vw; }
   .sheet-split-container { flex-direction: column; overflow-y: auto; }
   .sheet-left-photo-pane { width: 100%; height: 320px; flex-shrink: 0; border-right: none; border-bottom: 1px solid var(--border); }
