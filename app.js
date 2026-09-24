@@ -55,33 +55,25 @@ const vernMap = {
   'Testudines': 'Tortues',
   'Anura': 'Grenouilles & Crapauds',
   'Urodela': 'Salamandres & Tritons',
-  'Orchidaceae': 'Orchidées'
+  'Orchidaceae': 'Orchidées',
+  'Coccinellidae': 'Coccinelles'
 };
 
 function normalizeStr(str) {
   return (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-// Règle d'espèce terminale alignée sur iNaturalist (binômes, trinômes, hybrides, variétés)
 function isSpeciesTerminal(sp) {
   if (!sp || !sp.scientific_name) return false;
   const name = sp.scientific_name.trim();
-
-  // Exclure les rangs très généraux laissés sans identification
   const broadRoots = ['Animalia', 'Plantae', 'Fungi', 'Arthropoda', 'Chordata', 'Insecta', 'Aves', 'Reptilia', 'Amphibia', 'Mammalia'];
   if (broadRoots.includes(name)) return false;
 
   const parts = name.split(/\s+/);
-
-  // Si un seul mot : c'est un genre ou une famille non résolue
   if (parts.length === 1) return false;
-
-  // Si mention explicite sp. ou indet. seule au niveau genre
   if (parts.length === 2 && (parts[1].toLowerCase() === 'sp.' || parts[1].toLowerCase() === 'sp' || parts[1].toLowerCase() === 'indet.')) {
     return false;
   }
-
-  // Tout le reste est considéré par iNaturalist comme taxon terminal observé
   return true;
 }
 
@@ -992,7 +984,7 @@ function initStatsDashboard() {
   `;
   grid.appendChild(phenoBox);
 
-  // Cadran 2 : Profil de rareté
+  // Cadran 2 : Donut de fréquence
   const rarityBox = document.createElement('div');
   rarityBox.className = 'stat-box';
   rarityBox.innerHTML = `
@@ -1203,52 +1195,61 @@ function initOrUpdateWorldMap(sp) {
   }
 }
 
-// 7. MONOGRAPHIE STRUCTUREE (CIBLAGE WIKIPEDIA SUR LE BINOME PARENT POUR LES SOUS-ESPECES)
+// 7. MONOGRAPHIE STRUCTUREE AVEC FILTRAGE DU CONTENU CREUX
 function fetchStructuredNaturalistMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
   contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire naturaliste...`;
 
   const nameParts = sp.scientific_name.trim().split(/\s+/);
-  // Toujours cibler les 2 premiers mots pour garantir un retour Wikipédia même sur les sous-espèces
   const binomName = (nameParts.length >= 2) ? `${nameParts[0]} ${nameParts[1]}` : nameParts[0];
 
-  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=2000&titles=${encodeURIComponent(binomName)}&format=json&origin=*`;
-
-  fetch(endpoint)
-    .then(res => res.json())
-    .then(data => {
-      const pages = data.query ? data.query.pages : null;
-      const pageId = pages ? Object.keys(pages)[0] : '-1';
-
-      if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 80) {
-        renderStructuredChapters(sp, pages[pageId].extract.trim(), binomName !== sp.scientific_name);
-      } else {
-        fetchGenusWikipediaFallback(sp, nameParts[0]);
-      }
-    })
-    .catch(() => {
+  // Requête sur le nom binominal
+  queryWikipediaText(binomName, (text) => {
+    if (isValidNaturalistText(text)) {
+      renderStructuredChapters(sp, text, binomName !== sp.scientific_name);
+    } else if (sp.common_name && sp.common_name.length > 2) {
+      // Deuxième chance : tester le nom vernaculaire (ex: Coccinelle à onze points)
+      queryWikipediaText(sp.common_name, (vernText) => {
+        if (isValidNaturalistText(vernText)) {
+          renderStructuredChapters(sp, vernText, false);
+        } else {
+          renderFieldLocalChapters(sp);
+        }
+      });
+    } else {
       renderFieldLocalChapters(sp);
-    });
+    }
+  });
 }
 
-function fetchGenusWikipediaFallback(sp, genus) {
-  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=1500&titles=${encodeURIComponent(genus)}&format=json&origin=*`;
-
+function queryWikipediaText(title, callback) {
+  const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=2200&titles=${encodeURIComponent(title)}&format=json&origin=*`;
   fetch(endpoint)
     .then(res => res.json())
     .then(data => {
       const pages = data.query ? data.query.pages : null;
       const pageId = pages ? Object.keys(pages)[0] : '-1';
-
-      if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 80) {
-        renderStructuredChapters(sp, pages[pageId].extract.trim(), true);
+      if (pageId !== '-1' && pages[pageId].extract) {
+        callback(pages[pageId].extract.trim());
       } else {
-        renderFieldLocalChapters(sp);
+        callback(null);
       }
     })
-    .catch(() => {
-      renderFieldLocalChapters(sp);
-    });
+    .catch(() => callback(null));
+}
+
+// Détection stricte : élimine les listes de bases de données et catalogues
+function isValidNaturalistText(text) {
+  if (!text || text.length < 100) return false;
+  const lower = text.toLowerCase();
+  
+  // Si le texte est dominé par des mentions de bases taxonomiques sans vraie description
+  const catalogKeywords = ['selon biolib', 'selon fauna europaea', 'catalogue of life', 'liste des espèces', 'selon ncbi'];
+  let matchCount = 0;
+  catalogKeywords.forEach(kw => { if (lower.includes(kw)) matchCount++; });
+  
+  if (matchCount >= 2 && text.length < 500) return false;
+  return true;
 }
 
 function renderStructuredChapters(sp, rawText, isParentFallback) {
@@ -1286,7 +1287,7 @@ function renderStructuredChapters(sp, rawText, isParentFallback) {
       </div>
     </div>
     <div style="margin-top:1.25rem; padding-top:0.75rem; border-top:1px dashed var(--border); font-size:0.725rem; color:var(--text-dim); text-align:right;">
-      Source : Notice encyclopédique naturaliste ${isParentFallback ? "(taxon parent)" : ""}
+      Source : Synthèse naturaliste documentaire
     </div>
   `;
 }
@@ -1294,7 +1295,7 @@ function renderStructuredChapters(sp, rawText, isParentFallback) {
 function renderFieldLocalChapters(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
   const sci = sp.scientific_name;
-  const vern = sp.common_name ? `dénommé(e) communément <strong>${sp.common_name}</strong>` : `taxon systématique validé`;
+  const vern = sp.common_name ? `dénommé(e) communément <strong>${sp.common_name}</strong>` : `taxon validé`;
   const k = vernMap[sp.taxonomy.kingdom] || sp.taxonomy.kingdom;
   const o = vernMap[sp.taxonomy.order] || sp.taxonomy.order || 'Ordre indéterminé';
   const f = sp.taxonomy.family ? `la famille des <em>${sp.taxonomy.family}</em>` : 'une lignée spécialisée';
@@ -1303,16 +1304,26 @@ function renderFieldLocalChapters(sp) {
   const place = sp.place ? `Station : <strong>${sp.place}</strong>` : 'Station renseignée';
   const dateStr = sp.last_observed ? `relevé du <strong>${sp.last_observed}</strong>` : 'contact pérenne';
 
+  // Compléments biologiques contextualisés par grand ordre
+  let bioDetail = "Cet organisme exploite préférentiellement les milieux naturels préservés et les étages bioclimatiques caractéristiques de son aire de répartition, participant activement aux réseaux trophiques de son biotope d'accueil.";
+  if (sp.taxonomy.family === 'Coccinellidae') {
+    bioDetail = "Ce coléoptère prédateur est principalement aphidiphage (consommateur actif de pucerons et petits hémiptères). Les adultes fréquentent les herbacées ensoleillées, les lisières et les friches fleuries pour la chasse et la reproduction.";
+  } else if (sp.taxonomy.order === 'Lepidoptera') {
+    bioDetail = "Ce lépidoptère accomplit son cycle biologique en étroite association avec des plantes-hôtes spécifiques. Les imagos participent à la pollinisation et fréquentent les biotopes herbacés ou forestiers bien exposés.";
+  } else if (sp.taxonomy.kingdom === 'Fungi') {
+    bioDetail = "Ce champignon développe son mycélium dans la litière ou le bois mort, jouant un rôle clé dans le recyclage de la matière organique et la symbiose mycorhizienne avec la strate arborée.";
+  }
+
   contentEl.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:1.25rem;">
       <div>
         <h4 style="color:var(--accent-cyan); font-size:0.85rem; text-transform:uppercase; margin-bottom:0.4rem; letter-spacing:0.05em;">Morphologie & Position Systématique</h4>
-        <p style="line-height:1.8; font-size:0.95rem; color:#cbd5e1;"><strong>${sci}</strong>, ${vern}, se rattache au grand règne des <strong>${k}</strong>, dans l'ordre des <strong>${o}</strong> au sein de ${f} ${g}. Il présente l'ensemble des critères anatomiques diagnostiques de son clade.</p>
+        <p style="line-height:1.8; font-size:0.95rem; color:#cbd5e1;"><strong>${sci}</strong>, ${vern}, se rattache au grand règne des <strong>${k}</strong>, dans l'ordre des <strong>${o}</strong> au sein de ${f} ${g}. Il présente l'ensemble des critères anatomiques diagnostiques de ce clade.</p>
       </div>
 
       <div>
         <h4 style="color:var(--accent-emerald); font-size:0.85rem; text-transform:uppercase; margin-bottom:0.4rem; letter-spacing:0.05em;">Biologie, Mœurs & Niche Écologique</h4>
-        <p style="line-height:1.8; font-size:0.95rem; color:#cbd5e1;">Cet organisme exploite préférentiellement les milieux naturels et étages bioclimatiques caractéristiques de son aire de répartition, participant aux réseaux d'interactions trophiques de son biotope d'accueil.</p>
+        <p style="line-height:1.8; font-size:0.95rem; color:#cbd5e1;">${bioDetail}</p>
       </div>
 
       <div>
@@ -1443,7 +1454,7 @@ function populateRelatedSpecies(sp) {
   });
 }
 
-// 8. RÉCUPÉRATION STRICTEMENT LOCALE DES CLICHÉS (ZÉRO APPEL INATURALIST PAR ERREUR)
+// 8. CLICHÉS PERSONNELS : RECHERCHE STRICTEMENT LOCALE
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
   const sp = globalSpeciesData.find(s => String(s.id) === String(speciesId));
@@ -1463,7 +1474,7 @@ function openSpeciesPhotosModal(speciesId) {
   const grid = document.getElementById('obsPhotosModalGrid');
   grid.innerHTML = '';
 
-  // Recherche rigoureuse sur tes données exactes
+  // Isolation absolue : chercher uniquement les entrées du même taxon dans votre propre collection
   const sameObservations = globalSpeciesData.filter(s => s.scientific_name === sp.scientific_name);
   const myPhotosList = [];
 
@@ -1477,7 +1488,6 @@ function openSpeciesPhotosModal(speciesId) {
     }
   });
 
-  // Si l'espèce n'a qu'une seule ligne d'observation enregistrée dans le JSON
   if (myPhotosList.length === 0 && sp.photo_url) {
     myPhotosList.push({
       url: sp.photo_url,
