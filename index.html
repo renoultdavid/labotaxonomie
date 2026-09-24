@@ -212,9 +212,7 @@
     </div>
   </div>
 
-  <!-- ========================================================
-       SUPER-FICHE ESPÈCE : SPLIT-SCREEN 50/50 ÉLARGI
-       ======================================================== -->
+  <!-- SUPER-FICHE ESPÈCE -->
   <div class="species-sheet-overlay" id="speciesSheetOverlay">
     <div class="species-sheet-modal">
       
@@ -222,12 +220,12 @@
 
       <div class="sheet-split-container">
         
-        <!-- VOLET GAUCHE (50%) : PHOTO PURE -->
+        <!-- VOLET GAUCHE (50%) -->
         <div class="sheet-left-photo-pane">
           <img class="sheet-pure-photo" id="sheetHeroImg" src="" alt="" />
         </div>
 
-        <!-- VOLET DROIT (50%) : IDENTITÉ, ONGLETS ET INFORMATIONS -->
+        <!-- VOLET DROIT (50%) -->
         <div class="sheet-right-info-pane">
           
           <div class="sheet-header-identity">
@@ -239,16 +237,16 @@
             <div class="sheet-title-vern" id="sheetHeroVern">Nom Français Normalisé</div>
           </div>
 
+          <!-- NOUVEAUX INTITULÉS COURTS ET PARFAITEMENT CALIBRÉS -->
           <div class="sheet-nav-tabs">
-            <button class="sheet-tab-btn active" onclick="switchSheetTab(0)">📖 Monographie</button>
-            <button class="sheet-tab-btn" onclick="switchSheetTab(1)">🌍 Répartition Mondiale</button>
-            <button class="sheet-tab-btn" onclick="switchSheetTab(2)">🏛️ Lignée Cladistique</button>
-            <button class="sheet-tab-btn" onclick="switchSheetTab(3)">📍 Données Terrain</button>
-            <button class="sheet-tab-btn" onclick="switchSheetTab(4)">🌿 Apparentés</button>
+            <button class="sheet-tab-btn active" onclick="switchSheetTab(0)">📖 Notice</button>
+            <button class="sheet-tab-btn" onclick="switchSheetTab(1)">🌍 Monde</button>
+            <button class="sheet-tab-btn" onclick="switchSheetTab(2)">🏛️ Cladistique</button>
+            <button class="sheet-tab-btn" onclick="switchSheetTab(3)">📍 Terrain</button>
+            <button class="sheet-tab-btn" onclick="switchSheetTab(4)">🌿 Proches</button>
           </div>
 
           <div class="sheet-drawers-scroll">
-            <!-- 0. Monographie -->
             <div class="sheet-drawer active" id="sheetDrawer-0">
               <div class="sheet-section-title">Notice naturaliste & mœurs</div>
               <div class="sheet-wiki-box" id="sheetWikiContent">
@@ -259,7 +257,6 @@
               <div class="sheet-diag-grid" id="sheetEcoDiag"></div>
             </div>
 
-            <!-- 1. Répartition Mondiale -->
             <div class="sheet-drawer" id="sheetDrawer-1">
               <div class="sheet-section-title">Distribution biogéographique globale (iNaturalist / GBIF)</div>
               <div class="sheet-world-map-container" id="sheetWorldMapContainer">
@@ -267,19 +264,16 @@
               </div>
             </div>
 
-            <!-- 2. Cladistique -->
             <div class="sheet-drawer" id="sheetDrawer-2">
               <div class="sheet-section-title">Classification systématique (Règne à Espèce)</div>
               <div class="sheet-lineage-list" id="sheetTaxoLineage"></div>
             </div>
 
-            <!-- 3. Terrain -->
             <div class="sheet-drawer" id="sheetDrawer-3">
               <div class="sheet-section-title">Relevés de la collection</div>
               <div class="sheet-field-grid" id="sheetFieldData"></div>
             </div>
 
-            <!-- 4. Apparentés -->
             <div class="sheet-drawer" id="sheetDrawer-4">
               <div class="sheet-section-title" id="sheetRelatedTitle">Taxons apparentés dans la collection</div>
               <div class="results-gallery-mode" id="sheetRelatedGrid"></div>
@@ -293,27 +287,24 @@
     </div>
   </div>
 
-  <!-- ========================================================
-       NOUVELLE SUPER-FICHE : RANG SUPÉRIEUR (FAMILLE / ORDRE / GENRE)
-       ======================================================== -->
-  <div class="species-sheet-overlay" id="taxonSheetOverlay">
+  <!-- SUPER-FICHE RANG SUPÉRIEUR -->
+  <div class="species-sheet-overlay" id="taxonSheetOverlay" style="z-index: 10010;">
     <div class="species-sheet-modal">
       
-      <button class="sheet-close-btn" onclick="closeTaxonSheet()" title="Fermer (Échap)">✕</button>
+      <button class="sheet-close-btn" onclick="closeTaxonSheet()" title="Fermer et revenir à l'espèce (Échap)">✕</button>
 
       <div class="sheet-split-container">
         
-        <!-- VOLET GAUCHE (50%) : PHOTO DE L'ESPÈCE REPRÉSENTATIVE DE CE RANG -->
         <div class="sheet-left-photo-pane">
           <img class="sheet-pure-photo" id="taxonHeroImg" src="" alt="" />
           <div class="sheet-photo-credit-tag" id="taxonPhotoCredit">Spécimen représentatif</div>
         </div>
 
-        <!-- VOLET DROIT (50%) : PRÉSENTATION DU RANG & MOSAÏQUE DES ESPÈCES -->
         <div class="sheet-right-info-pane">
           
           <div class="sheet-header-identity">
             <div class="sheet-badges-row">
+              <button class="btn-locate-map" onclick="closeTaxonSheet()" style="background:rgba(255,255,255,0.08); border-color:var(--border); color:#fff;">← Revenir à l'espèce</button>
               <span class="sheet-rank-badge" id="taxonRankBadge">Famille</span>
               <span class="sheet-rank-badge" style="color:var(--accent-emerald); border-color:var(--accent-emerald);" id="taxonStatsBadge">0 espèce</span>
             </div>
