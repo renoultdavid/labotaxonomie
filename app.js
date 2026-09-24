@@ -535,7 +535,6 @@ function syncGeoRightPane(prioritySpecies = null) {
   let visibleSpecies = [];
   const seenIds = new Set();
 
-  // Si une espèce est prioritaire (suite à "Localiser"), on la place en tout début
   if (prioritySpecies) {
     seenIds.add(prioritySpecies.id);
     visibleSpecies.push(prioritySpecies);
@@ -1186,9 +1185,15 @@ function closeSpeciesSheet() {
   document.getElementById('speciesSheetOverlay').classList.remove('active');
   const mod1Active = document.getElementById('module1').classList.contains('active');
   const mod2Active = document.getElementById('module2').classList.contains('active');
-  if (mod1Active) updateURLHash('module1', 0);
-  else if (mod2Active) updateURLHash('module2', 0);
-  else updateURLHash(null);
+  if (mod1Active) {
+    // Si on est déjà sur l'onglet géographie 2D, conserver le hash sur la carte
+    const isGeoActive = document.getElementById('view1-1').classList.contains('active');
+    updateURLHash('module1', isGeoActive ? 1 : 0);
+  } else if (mod2Active) {
+    updateURLHash('module2', 0);
+  } else {
+    updateURLHash(null);
+  }
 }
 
 document.addEventListener('keydown', (e) => {
@@ -1244,22 +1249,27 @@ function locateSpeciesOnMap(sp) {
     return;
   }
 
-  closeSpeciesSheet();
-  closeTaxonSheet();
+  // 1. Fermer les fiches superposées SANS déclencher de redirection d'URL inopportune
+  document.getElementById('speciesSheetOverlay').classList.remove('active');
+  const taxonOverlay = document.getElementById('taxonSheetOverlay');
+  if (taxonOverlay) taxonOverlay.classList.remove('active');
 
+  // 2. Ouvrir le Module 1 et basculer sur l'onglet Géographie 2D (index 1)
   openModule('module1', false);
-  switchModuleTab('module1', 1, false);
+  switchModuleTab('module1', 1, true);
 
+  // 3. Forcer la carte Leaflet à recalculer sa taille et zoomer sur le point
   setTimeout(() => {
     if (!geoMap) initGeoMapWorkspace();
+    geoMap.invalidateSize();
 
     const lat = sp.coordinates.lat;
     const lng = sp.coordinates.lng;
 
-    // 1. Zoom maximal (18) pour défaire les clusters
+    // Zoom maximal 18 pour forcer la séparation des points
     geoMap.setView([lat, lng], 18, { animate: true });
 
-    // 2. Recherche du marker Leaflet correspondant
+    // Recherche et ouverture du marker correspondant
     if (clusterGroup) {
       let targetMarker = null;
       clusterGroup.eachLayer(layer => {
@@ -1269,7 +1279,6 @@ function locateSpeciesOnMap(sp) {
       });
 
       if (targetMarker) {
-        // Force l'éclatement en éventail si plusieurs points partagent le même emplacement exact
         clusterGroup.zoomToShowLayer(targetMarker, () => {
           setTimeout(() => {
             targetMarker.openPopup();
@@ -1278,9 +1287,9 @@ function locateSpeciesOnMap(sp) {
       }
     }
 
-    // 3. Mise en avant directe dans la colonne de droite (première position avec halo)
+    // Mise en avant directe dans la colonne de droite (première position avec halo cyan)
     syncGeoRightPane(sp);
-  }, 250);
+  }, 200);
 }
 
 // 8. MONOGRAPHIE STRUCTUREE SANS TEXTE CREUX
@@ -1618,7 +1627,6 @@ window.openTaxonSheet = function(rankKey, rankName) {
   const grid = document.getElementById('taxonSpeciesGrid');
   grid.innerHTML = '';
 
-  // ACTION RÉSOLUE : bascule immédiate vers la fiche de la nouvelle espèce
   matchingSpecies.forEach(sp => {
     const card = createOriginalGalleryCard(sp, '', null, (selectedSpecies) => {
       closeTaxonSheet();
