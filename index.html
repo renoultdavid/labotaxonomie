@@ -3,932 +3,574 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Observatoire Phylogénétique & Cladistique</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <title>Observatoire du Vivant • Laboratoire Taxonomique</title>
   <style>
     :root {
-      --bg-space: #07090e;
-      --panel-bg: rgba(13, 17, 24, 0.96);
-      --card-bg: #111726;
-      --card-hover: #182236;
-      --border: #1e293b;
-      --accent: #38bdf8;
-      --accent-green: #10b981;
+      --bg-deep: #05070b;
+      --panel-bg: #090e17;
+      --card-bg: #101623;
+      --border: rgba(255, 255, 255, 0.08);
+      --accent-cyan: #38bdf8;
+      --accent-emerald: #10b981;
       --accent-amber: #f59e0b;
-      --text-main: #f1f5f9;
+      --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg-space);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-deep);
       color: var(--text-main);
       height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Barre supérieure */
-    header {
-      background: #090d16;
-      border-bottom: 1px solid var(--border);
-      height: 54px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 1.25rem;
-      z-index: 100;
-      flex-shrink: 0;
-    }
-
-    .brand-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: #fff;
-    }
-
-    .metrics-bar {
-      display: flex;
-      gap: 1.5rem;
-      align-items: center;
-    }
-
-    .metric-item {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
-
-    .metric-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-dim); }
-    .metric-value { font-size: 0.95rem; font-weight: 700; color: var(--accent); }
-
-    .cockpit-body {
-      flex: 1;
-      display: flex;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* 1. VOLET GAUCHE : COIN EXPERT (Filtres cladistiques stricts) */
-    aside.sidebar-left {
-      width: 310px;
-      background: var(--panel-bg);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      z-index: 20;
-    }
-
-    .expert-header {
-      padding: 0.85rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      background: #0b101a;
-    }
-
-    .tag-expert {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      font-weight: 700;
-      color: var(--accent-amber);
-      letter-spacing: 0.05em;
-    }
-
-    .search-box input {
-      width: 100%;
-      background: #070a12;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.45rem 0.65rem;
-      color: var(--text-main);
-      font-size: 0.825rem;
-      outline: none;
-    }
-
-    .search-box input:focus { border-color: var(--accent); }
-
-    .taxo-tree {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0.75rem 0.5rem;
-      font-size: 0.8rem;
-    }
-
-    .tree-node { margin-bottom: 0.25rem; }
-
-    .tree-label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.35rem 0.5rem;
-      border-radius: 4px;
-      cursor: pointer;
-      color: var(--text-muted);
-      user-select: none;
-    }
-
-    .tree-label:hover { background: rgba(255, 255, 255, 0.04); color: var(--text-main); }
-    .tree-label.selected { background: rgba(56, 189, 248, 0.15); color: var(--accent); font-weight: 600; }
-
-    .tree-count {
-      font-size: 0.7rem;
-      background: #080c14;
-      padding: 0.1rem 0.35rem;
-      border-radius: 3px;
-      color: var(--text-dim);
-    }
-
-    .tree-children {
-      margin-left: 0.85rem;
-      border-left: 1px dashed var(--border);
-      padding-left: 0.4rem;
-      display: none;
-    }
-
-    .tree-children.expanded { display: block; }
-
-    /* 2. ZONE CENTRALE : L'ARBRE DU VIVANT VISUEL & IMMERSIF */
-    main.viewport-center {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background: #060910;
-      position: relative;
-    }
-
-    .subbar {
-      height: 46px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 1.25rem;
-      font-size: 0.8rem;
-      background: #090e18;
-      z-index: 10;
-    }
-
-    .nav-breadcrumbs {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 500;
-      color: var(--text-muted);
-    }
-
-    .crumb-link {
-      cursor: pointer;
-      color: var(--accent);
-    }
-    .crumb-link:hover { text-decoration: underline; }
-
-    .view-toggle {
-      display: flex;
-      background: #04060a;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      overflow: hidden;
-    }
-
-    .view-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 0.35rem 0.75rem;
-      font-size: 0.75rem;
-      cursor: pointer;
-    }
-
-    .view-btn.active {
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    /* L'Arbre Visuel (Cladogramme interactif en cartes) */
-    .tree-stage {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .stage-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .stage-subtitle {
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      margin-top: -1rem;
-    }
-
-    .clade-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .clade-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-      position: relative;
-    }
-
-    .clade-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--accent);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-      background: var(--card-hover);
-    }
-
-    .clade-banner {
-      height: 140px;
-      background: #020408;
+      width: 100vw;
       overflow: hidden;
       position: relative;
     }
 
-    .clade-banner img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.3s;
-    }
-
-    .clade-card:hover .clade-banner img {
-      transform: scale(1.05);
-    }
-
-    .clade-badge {
+    /* ========================================================
+       1. ÉCRAN D'ACCUEIL : DOUBLE VOLET SPLIT 50/50
+       ======================================================== */
+    #homeScreen {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(4px);
-      color: var(--accent);
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      border: 1px solid rgba(255,255,255,0.1);
+      inset: 0;
+      display: flex;
+      z-index: 10;
+      transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
-    .clade-details {
-      padding: 0.85rem;
+    #homeScreen.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.02);
+    }
+
+    .home-pane {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
+      justify-content: flex-end;
+      padding: 3.5rem;
+      border-right: 1px solid var(--border);
+      transition: flex 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .clade-name {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #fff;
+    .home-pane:last-child {
+      border-right: none;
     }
 
-    .clade-vern {
-      font-size: 0.775rem;
-      color: var(--text-muted);
+    /* Images d'habillage Drive */
+    .pane-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
+      z-index: 1;
+      filter: brightness(0.85);
     }
 
-    .clade-rank {
-      font-size: 0.65rem;
+    /* Volet 1 : Recherche d'Espèce */
+    #pane1 .pane-bg {
+      background-image: url('https://lh3.googleusercontent.com/d/1Qo2Hkm5qesqYP7Hljfv3XfyosM72bFNx');
+    }
+
+    /* Volet 2 : Observations & Statistiques */
+    #pane2 .pane-bg {
+      background-image: url('https://lh3.googleusercontent.com/d/1exkNvAcu4DIDDWbGWusEb9FSPuK87oo_');
+    }
+
+    /* Dégradé sombre protecteur pour le texte */
+    .pane-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(5, 7, 11, 0.15) 0%,
+        rgba(5, 7, 11, 0.5) 45%,
+        rgba(5, 7, 11, 0.95) 100%
+      );
+      z-index: 2;
+      transition: background 0.35s ease;
+    }
+
+    .pane-content {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-width: 580px;
+    }
+
+    .pane-num {
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: var(--text-dim);
-      margin-top: 0.4rem;
-      letter-spacing: 0.05em;
+      color: var(--accent-cyan);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    /* Grille terminale des espèces */
-    .species-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    #pane2 .pane-num {
+      color: var(--accent-emerald);
+    }
+
+    .pane-num::after {
+      content: '';
+      display: inline-block;
+      width: 35px;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.4;
+    }
+
+    /* Titre avec bouton pulsant aligné */
+    .title-row {
+      display: flex;
+      align-items: center;
       gap: 1rem;
     }
 
-    .species-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      overflow: hidden;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.15s, border-color 0.15s;
-    }
-
-    .species-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--accent);
-    }
-
-    .species-thumb {
-      aspect-ratio: 4/3;
-      background: #020408;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .species-thumb img { width: 100%; height: 100%; object-fit: cover; }
-
-    .species-info {
-      padding: 0.55rem;
-      background: #0d121c;
-      border-top: 1px solid var(--border);
-    }
-
-    .species-sci {
-      font-size: 0.775rem;
-      font-weight: 600;
-      font-style: italic;
+    .pane-title {
+      font-size: 2.3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
       color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      line-height: 1.15;
     }
 
-    .species-vern {
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* 3. VOLET DROIT : SUPER-FICHE EXPERTISE SCIENTIFIQUE */
-    aside.sidebar-right {
-      width: 480px;
-      background: var(--panel-bg);
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      transform: translateX(100%);
-      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      right: 0;
-      z-index: 2000;
-      backdrop-filter: blur(20px);
-      box-shadow: -12px 0 35px rgba(0,0,0,0.85);
-    }
-
-    aside.sidebar-right.open { transform: translateX(0); }
-
-    .right-header {
-      padding: 1.1rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      background: #090e18;
-    }
-
-    .close-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-dim);
-      font-size: 1.6rem;
-      cursor: pointer;
-      line-height: 1;
-    }
-    .close-btn:hover { color: #fff; }
-
-    .right-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.6rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--accent-green);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .hero-photo-wrap {
-      border-radius: 8px;
-      overflow: hidden;
-      aspect-ratio: 16/10;
-      background: #000;
-      border: 1px solid var(--border);
-    }
-    .hero-photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
-
-    .btn-sci {
-      background: #151d2a;
-      border: 1px solid var(--border);
-      color: var(--text-main);
-      padding: 0.6rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.775rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
+    /* Bouton Pulsant Discret */
+    .pulse-btn {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid var(--accent-cyan);
       display: flex;
       align-items: center;
       justify-content: center;
-      text-align: center;
-      transition: all 0.15s;
-    }
-    .btn-sci:hover { background: #1c2738; border-color: var(--accent); color: #fff; }
-
-    .btn-sci.drive {
-      background: rgba(16, 185, 129, 0.12);
-      border-color: rgba(16, 185, 129, 0.35);
-      color: var(--accent-green);
+      flex-shrink: 0;
+      cursor: pointer;
+      color: #fff;
+      transition: transform 0.2s ease, background 0.2s ease;
     }
 
-    .section-block {
-      background: #0b101a;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.9rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+    #pane2 .pulse-btn {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--accent-emerald);
     }
 
-    .section-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--accent);
-      font-weight: 700;
+    /* Onde pulsante continue */
+    .pulse-btn::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-cyan);
+      opacity: 0.8;
+      animation: pulseWave 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
     }
 
-    .section-body {
-      font-size: 0.825rem;
+    #pane2 .pulse-btn::before {
+      border-color: var(--accent-emerald);
+    }
+
+    @keyframes pulseWave {
+      0% {
+        transform: scale(0.9);
+        opacity: 0.8;
+      }
+      70% {
+        transform: scale(1.6);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1.6);
+        opacity: 0;
+      }
+    }
+
+    .pulse-icon {
+      font-size: 0.9rem;
+      font-weight: bold;
+      transform: translateX(1px);
+    }
+
+    .pane-desc {
+      font-size: 0.95rem;
       color: var(--text-muted);
       line-height: 1.55;
     }
 
-    .taxo-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-    .taxo-chip {
-      background: #080c14;
+    .pane-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+      padding: 0.7rem 1.3rem;
+      background: rgba(255, 255, 255, 0.08);
       border: 1px solid var(--border);
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.725rem;
-      color: var(--text-muted);
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+      backdrop-filter: blur(8px);
+      width: fit-content;
+      transition: all 0.25s ease;
     }
-    .taxo-chip span { color: var(--text-dim); font-size: 0.65rem; margin-right: 0.25rem; text-transform: uppercase; }
 
-    #specimenMap { height: 180px; border-radius: 6px; border: 1px solid var(--border); }
+    /* Effets de survol / interaction */
+    @media (hover: hover) {
+      .home-pane:hover {
+        flex: 1.15;
+      }
+      .home-pane:hover .pane-bg {
+        transform: scale(1.04);
+        filter: brightness(1);
+      }
+      .home-pane:hover .pulse-btn {
+        transform: scale(1.1);
+        background: var(--accent-cyan);
+        color: #03141f;
+      }
+      #pane2:hover .pulse-btn {
+        background: var(--accent-emerald);
+        color: #021a10;
+      }
+      .home-pane:hover .pane-cta {
+        background: var(--accent-cyan);
+        color: #03141f;
+        border-color: var(--accent-cyan);
+      }
+      #pane2:hover .pane-cta {
+        background: var(--accent-emerald);
+        color: #021a10;
+        border-color: var(--accent-emerald);
+      }
+    }
+
+    /* ========================================================
+       2. MODULES PLEINE PAGE
+       ======================================================== */
+    .app-module {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-deep);
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(16px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .app-module.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .module-topbar {
+      height: 62px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .module-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .btn-back-home {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .btn-back-home:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent-cyan);
+    }
+
+    .module-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .module-tabs {
+      display: flex;
+      background: #05080e;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.25rem;
+      gap: 0.25rem;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover { color: #fff; }
+
+    .tab-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+    }
+
+    #module2 .tab-btn.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+    }
+
+    .module-view-stack {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .module-view {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .module-view.active { display: flex; }
+
+    .view-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-dim);
+      gap: 0.75rem;
+      text-align: center;
+    }
+
+    .view-placeholder h3 {
+      font-size: 1.3rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .view-placeholder p {
+      max-width: 480px;
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 900px) {
+      #homeScreen { flex-direction: column; }
+      .home-pane {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 2rem;
+      }
+      .pane-title { font-size: 1.8rem; }
+    }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="brand-title">Observatoire du Vivant</div>
-    <div class="metrics-bar">
-      <div class="metric-item">
-        <span class="metric-label">Spécimens</span>
-        <span class="metric-value" id="topSpeciesCount">—</span>
-      </div>
-      <div class="metric-item">
-        <span class="metric-label">Dossiers Drive</span>
-        <span class="metric-value" id="topDriveCount" style="color: var(--accent-green);">—</span>
+  <!-- ========================================================
+       ACCUEIL : DOUBLE VOLET SPLIT 50/50 AVEC VISUELS DRIVE
+       ======================================================== -->
+  <div id="homeScreen">
+    
+    <!-- Volet 1 : Recherche d'Espèce -->
+    <div class="home-pane" id="pane1" onclick="openModule('module1')">
+      <div class="pane-bg"></div>
+      <div class="pane-overlay"></div>
+      <div class="pane-content">
+        <div class="pane-num">Module 01</div>
+        <div class="title-row">
+          <h1 class="pane-title">Recherche d'Espèce</h1>
+          <div class="pulse-btn" title="Entrer dans le module">
+            <span class="pulse-icon">→</span>
+          </div>
+        </div>
+        <p class="pane-desc">Explorez le vivant par l'arbre taxonomique strict, la cartographie géographique 2D par zones ou la galerie visuelle intuitive.</p>
+        <div class="pane-cta">
+          <span>Ouvrir l'explorateur</span>
+          <span>→</span>
+        </div>
       </div>
     </div>
-  </header>
 
-  <div class="cockpit-body">
-
-    <!-- 1. GAUCHE : COIN EXPERT -->
-    <aside class="sidebar-left">
-      <div class="expert-header">
-        <div class="tag-expert">🧬 Coin Expert Cladistique</div>
-        <div class="search-box">
-          <input type="text" id="globalSearch" placeholder="Filtre latin, famille, code..." />
-        </div>
-        <button id="resetFilterBtn" class="btn-sci" style="padding: 0.35rem; font-size: 0.75rem;">Réinitialiser l'arbre</button>
-      </div>
-      <div class="taxo-tree" id="taxoTree"></div>
-    </aside>
-
-    <!-- 2. CENTRE : ARBRE DU VIVANT INTERACTIF -->
-    <main class="viewport-center">
-      <div class="subbar">
-        <div class="nav-breadcrumbs" id="breadcrumbs">
-          <span class="crumb-link" onclick="browseToLevel('root')">Biota (L'Arbre du Vivant)</span>
-        </div>
-        <div class="view-toggle">
-          <button class="view-btn active" id="btnModeTree" onclick="setTreeDisplayMode('tree')">Arbre Cladistique</button>
-          <button class="view-btn" id="btnModeAll" onclick="setTreeDisplayMode('all')">Tous les spécimens</button>
-        </div>
-      </div>
-
-      <div class="tree-stage" id="stageContent">
-        <!-- Généré dynamiquement en cartes d'exploration cliquables -->
-      </div>
-    </main>
-
-    <!-- 3. DROITE : SUPER-FICHE SCIENTIFIQUE -->
-    <aside class="sidebar-right" id="expertPanel">
-      <div class="right-header">
-        <div>
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-            <span class="status-pill">LC • Statut UICN</span>
-            <span id="detailRank" style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Espèce</span>
-          </div>
-          <h2 id="detailSciName" style="font-style: italic; font-size: 1.3rem; color: #fff; line-height: 1.2;"></h2>
-          <p id="detailVernName" style="font-size: 0.85rem; color: var(--accent); margin-top: 0.15rem;"></p>
-        </div>
-        <button class="close-btn" onclick="closeExpertPanel()">&times;</button>
-      </div>
-
-      <div class="right-content">
-        <div class="hero-photo-wrap">
-          <img id="detailImg" src="" alt="Spécimen" />
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-          <a id="detailDriveLink" href="#" target="_blank" class="btn-sci drive" style="display: none;">
-            📁 Ouvrir le dossier source Google Drive
-          </a>
-          <button id="btnIsolateFamily" class="btn-sci">Isoler toute la famille</button>
-        </div>
-
-        <!-- Diagnostic & Mœurs -->
-        <div class="section-block">
-          <div class="section-title">🔍 Diagnostic morphologique & Critères</div>
-          <div class="section-body" id="detailMorpho"></div>
-        </div>
-
-        <div class="section-block">
-          <div class="section-title">🌿 Écologie, Biotope & Mœurs</div>
-          <div class="section-body" id="detailEcology"></div>
-        </div>
-
-        <!-- Positionnement cladistique complet -->
-        <div class="section-block">
-          <div class="section-title">🧬 Phylogénie & Taxonomie</div>
-          <div class="taxo-chips" id="detailTaxoChips"></div>
-        </div>
-
-        <!-- Carte ESRI -->
-        <div class="section-block">
-          <div class="section-title">🛰️ Relevé de terrain & Satellite ESRI</div>
-          <div id="specimenMap"></div>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">
-            <div id="detailLocText">—</div>
-            <div id="detailDateText" style="color: var(--text-dim);">—</div>
+    <!-- Volet 2 : Observations & Statistiques -->
+    <div class="home-pane" id="pane2" onclick="openModule('module2')">
+      <div class="pane-bg"></div>
+      <div class="pane-overlay"></div>
+      <div class="pane-content">
+        <div class="pane-num">Module 02</div>
+        <div class="title-row">
+          <h1 class="pane-title">Observations & Statistiques</h1>
+          <div class="pulse-btn" title="Entrer dans le module">
+            <span class="pulse-icon">→</span>
           </div>
         </div>
+        <p class="pane-desc">Consultez l'ensemble des planches de terrain, triez vos observations et analysez la complétude et la biodiversité de votre collection.</p>
+        <div class="pane-cta">
+          <span>Accéder aux données</span>
+          <span>→</span>
+        </div>
       </div>
-    </aside>
+    </div>
 
   </div>
 
+  <!-- ========================================================
+       MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS)
+       ======================================================== -->
+  <div class="app-module" id="module1">
+    <div class="module-topbar">
+      <div class="module-nav-left">
+        <button class="btn-back-home" onclick="backToHome()">← Accueil</button>
+        <div class="module-title">Recherche d'Espèce</div>
+      </div>
+
+      <div class="module-tabs">
+        <button class="tab-btn active" onclick="switchModuleTab('module1', 0)">1. Recherche Expert</button>
+        <button class="tab-btn" onclick="switchModuleTab('module1', 1)">2. Géographie 2D</button>
+        <button class="tab-btn" onclick="switchModuleTab('module1', 2)">3. Recherche Visuelle</button>
+      </div>
+    </div>
+
+    <div class="module-view-stack">
+      <div class="module-view active" id="view1-0">
+        <div class="view-placeholder">
+          <h3>Onglet 1 : Recherche Expert Cladistique</h3>
+          <p>Arbre taxonomique strict sans artifice, affichant les binômes latins avec noms vernaculaires et compteurs d'espèces.</p>
+        </div>
+      </div>
+
+      <div class="module-view" id="view1-1">
+        <div class="view-placeholder">
+          <h3>Onglet 2 : Recherche Géographique 2D</h3>
+          <p>Carte interactive avec clusters colorés d'un côté et vignettes des espèces observées de l'autre.</p>
+        </div>
+      </div>
+
+      <div class="module-view" id="view1-2">
+        <div class="view-placeholder">
+          <h3>Onglet 3 : Recherche par Images</h3>
+          <p>Navigation simplifiée par grands groupes illustrés sans jargon technique.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODULE 2 : OBSERVATIONS & STATISTIQUES (2 ONGLETS)
+       ======================================================== -->
+  <div class="app-module" id="module2">
+    <div class="module-topbar">
+      <div class="module-nav-left">
+        <button class="btn-back-home" onclick="backToHome()">← Accueil</button>
+        <div class="module-title">Observations & Statistiques</div>
+      </div>
+
+      <div class="module-tabs">
+        <button class="tab-btn active" onclick="switchModuleTab('module2', 0)">Observations</button>
+        <button class="tab-btn" onclick="switchModuleTab('module2', 1)">Statistiques & Ratios</button>
+      </div>
+    </div>
+
+    <div class="module-view-stack">
+      <div class="module-view active" id="view2-0">
+        <div class="view-placeholder">
+          <h3>Onglet 1 : Mosaïque des Observations</h3>
+          <p>Toutes les observations de terrain avec options de tri chronologique et alphabétique.</p>
+        </div>
+      </div>
+
+      <div class="module-view" id="view2-1">
+        <div class="view-placeholder">
+          <h3>Onglet 2 : Statistiques & Analyses</h3>
+          <p>Tableau de bord d'analyse, représentativité des taxons et couverture des stations.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    let rawSpecies = [];
-    let currentPath = []; // Ex: ['Animalia', 'Arthropoda', 'Insecta']
-    let displayMode = 'tree'; // 'tree' ou 'all'
-    let detailMap = null;
-    let detailMarker = null;
+    let globalSpeciesData = null;
 
     fetch('data.json')
       .then(res => res.json())
       .then(data => {
-        rawSpecies = data;
-        document.getElementById('topSpeciesCount').innerText = rawSpecies.length.toLocaleString('fr-FR');
-        const driveCount = rawSpecies.filter(s => s.drive_folder_id).length;
-        document.getElementById('topDriveCount').innerText = `${Math.round(driveCount / rawSpecies.length * 100)} %`;
-
-        buildTaxonomyTreeLeft();
-        renderStage();
+        globalSpeciesData = data;
+        console.log(`Données prêtes en tâche de fond : ${data.length} taxons.`);
+      })
+      .catch(err => {
+        console.warn('data.json...', err);
       });
 
-    // NAVIGATION DANS L'ARBRE VISUEL
-    function browseToLevel(index) {
-      if (index === 'root') currentPath = [];
-      else currentPath = currentPath.slice(0, index + 1);
-      renderStage();
+    function openModule(moduleId) {
+      document.getElementById('homeScreen').classList.add('hidden');
+      document.getElementById(moduleId).classList.add('active');
     }
 
-    function drillDown(name) {
-      currentPath.push(name);
-      renderStage();
+    function backToHome() {
+      document.querySelectorAll('.app-module').forEach(m => m.classList.remove('active'));
+      document.getElementById('homeScreen').classList.remove('hidden');
     }
 
-    function setTreeDisplayMode(mode) {
-      displayMode = mode;
-      document.getElementById('btnModeTree').classList.toggle('active', mode === 'tree');
-      document.getElementById('btnModeAll').classList.toggle('active', mode === 'all');
-      renderStage();
-    }
-
-    function renderStage() {
-      updateBreadcrumbs();
-      const stage = document.getElementById('stageContent');
-      stage.innerHTML = '';
-
-      // Filtrer les espèces selon le chemin actuel
-      const ranks = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus'];
-      let scoped = rawSpecies;
-
-      currentPath.forEach((step, idx) => {
-        const r = ranks[idx];
-        scoped = scoped.filter(s => s.taxonomy[r] === step);
+    function switchModuleTab(moduleId, tabIndex) {
+      const module = document.getElementById(moduleId);
+      
+      const tabs = module.querySelectorAll('.tab-btn');
+      tabs.forEach((tab, idx) => {
+        tab.classList.toggle('active', idx === tabIndex);
       });
 
-      // Si mode 'all' ou si on est arrivé au bout de l'arbre -> afficher la grille d'espèces
-      const nextRankIdx = currentPath.length;
-      if (displayMode === 'all' || nextRankIdx >= ranks.length) {
-        renderSpeciesGrid(stage, scoped);
-        return;
-      }
-
-      // Sinon, on calcule les sous-branches (clades suivants)
-      const nextRank = ranks[nextRankIdx];
-      const clades = {};
-
-      scoped.forEach(sp => {
-        const val = sp.taxonomy[nextRank];
-        if (val) {
-          if (!clades[val]) clades[val] = { name: val, count: 0, samplePhoto: sp.photo_url, vern: sp.common_name };
-          clades[val].count++;
-          if (!clades[val].samplePhoto && sp.photo_url) clades[val].samplePhoto = sp.photo_url;
-        }
-      });
-
-      const cladeList = Object.values(clades).sort((a,b) => b.count - a.count);
-
-      // Si aucun sous-rang trouvé, afficher directement les espèces
-      if (cladeList.length === 0) {
-        renderSpeciesGrid(stage, scoped);
-        return;
-      }
-
-      // Rendu des belles cartes de Clades
-      const title = document.createElement('div');
-      title.className = 'stage-title';
-      title.innerHTML = `Exploration : <span>${currentPath.length ? currentPath[currentPath.length - 1] : 'Tous les Règnes'}</span>`;
-      stage.appendChild(title);
-
-      const subtitle = document.createElement('div');
-      subtitle.className = 'stage-subtitle';
-      subtitle.innerText = `Sélectionnez un groupe (${nextRank.toUpperCase()}) pour descendre dans l'arbre du vivant :`;
-      stage.appendChild(subtitle);
-
-      const grid = document.createElement('div');
-      grid.className = 'clade-grid';
-
-      cladeList.forEach(c => {
-        const card = document.createElement('div');
-        card.className = 'clade-card';
-        card.onclick = () => drillDown(c.name);
-
-        const img = c.samplePhoto || 'https://via.placeholder.com/300x200/020408/334155?text=' + c.name;
-
-        card.innerHTML = `
-          <div class="clade-banner">
-            <img src="${img}" alt="${c.name}" loading="lazy">
-            <span class="clade-badge">${c.count} espèces</span>
-          </div>
-          <div class="clade-details">
-            <div class="clade-name">${c.name}</div>
-            <div class="clade-vern">${c.vern || 'Clade scientifique'}</div>
-            <div class="clade-rank">${nextRank}</div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-
-      stage.appendChild(grid);
-    }
-
-    function renderSpeciesGrid(container, list) {
-      const title = document.createElement('div');
-      title.className = 'stage-title';
-      title.innerText = `Spécimens observés (${list.length})`;
-      container.appendChild(title);
-
-      const grid = document.createElement('div');
-      grid.className = 'species-grid';
-
-      list.slice(0, 120).forEach(sp => {
-        const card = document.createElement('div');
-        card.className = 'species-card';
-        card.onclick = () => openExpertPanel(sp);
-
-        const img = sp.photo_url || 'https://via.placeholder.com/200x150/020408/334155?text=Sans+visuel';
-        card.innerHTML = `
-          <div class="species-thumb"><img src="${img}" alt="" loading="lazy"></div>
-          <div class="species-info">
-            <div class="species-sci">${sp.scientific_name}</div>
-            <div class="species-vern">${sp.common_name || sp.taxonomy.family || ''}</div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-
-      container.appendChild(grid);
-    }
-
-    function updateBreadcrumbs() {
-      const bc = document.getElementById('breadcrumbs');
-      bc.innerHTML = `<span class="crumb-link" onclick="browseToLevel('root')">Biota</span>`;
-      currentPath.forEach((p, idx) => {
-        bc.innerHTML += ` <span style="color:var(--text-dim)">&gt;</span> <span class="crumb-link" onclick="browseToLevel(${idx})">${p}</span>`;
+      const views = module.querySelectorAll('.module-view');
+      views.forEach((view, idx) => {
+        view.classList.toggle('active', idx === tabIndex);
       });
     }
-
-    // VOLET GAUCHE (ARBRE CLADISTIQUE TECHNIQUE)
-    function buildTaxonomyTreeLeft() {
-      const treeContainer = document.getElementById('taxoTree');
-      treeContainer.innerHTML = '';
-      const tree = {};
-
-      rawSpecies.forEach(sp => {
-        const k = sp.taxonomy.kingdom || 'Incertain';
-        const p = sp.taxonomy.phylum || 'Autre';
-        const o = sp.taxonomy.order || 'Ordre indét.';
-
-        if (!tree[k]) tree[k] = {};
-        if (!tree[k][p]) tree[k][p] = {};
-        tree[k][p][o] = (tree[k][p][o] || 0) + 1;
-      });
-
-      Object.keys(tree).sort().forEach(k => {
-        const kNode = createLeftNode(k, 'kingdom');
-        const kChildren = document.createElement('div');
-        kChildren.className = 'tree-children';
-
-        Object.keys(tree[k]).sort().forEach(p => {
-          const pNode = createLeftNode(p, 'phylum');
-          const pChildren = document.createElement('div');
-          pChildren.className = 'tree-children';
-
-          Object.keys(tree[k][p]).sort().forEach(o => {
-            const oNode = createLeftNode(o, 'order', tree[k][p][o]);
-            pChildren.appendChild(oNode);
-          });
-
-          pNode.appendChild(pChildren);
-          kChildren.appendChild(pNode);
-        });
-
-        kNode.appendChild(kChildren);
-        treeContainer.appendChild(kNode);
-      });
-    }
-
-    function createLeftNode(name, rank, count) {
-      const div = document.createElement('div');
-      div.className = 'tree-node';
-      const label = document.createElement('div');
-      label.className = 'tree-label';
-      label.innerHTML = `<span>${name}</span> ${count ? `<span class="tree-count">${count}</span>` : ''}`;
-
-      label.onclick = (e) => {
-        e.stopPropagation();
-        const ch = div.querySelector('.tree-children');
-        if (ch) ch.classList.toggle('expanded');
-
-        // Met à jour la navigation centrale !
-        if (rank === 'kingdom') currentPath = [name];
-        else if (rank === 'phylum') currentPath = [currentPath[0] || 'Animalia', name];
-        else if (rank === 'order') currentPath = [currentPath[0] || 'Animalia', currentPath[1] || 'Arthropoda', currentPath[2] || 'Insecta', name];
-        renderStage();
-      };
-
-      div.appendChild(label);
-      return div;
-    }
-
-    // VOLET DROIT (SUPER-FICHE)
-    function openExpertPanel(sp) {
-      const panel = document.getElementById('expertPanel');
-      panel.classList.add('open');
-
-      document.getElementById('detailSciName').innerText = sp.scientific_name;
-      document.getElementById('detailVernName').innerText = sp.common_name || 'Nom vernaculaire non formalisé';
-      document.getElementById('detailImg').src = sp.photo_url || '';
-
-      const driveLink = document.getElementById('detailDriveLink');
-      if (sp.drive_folder_id) {
-        driveLink.href = `https://drive.google.com/drive/folders/${sp.drive_folder_id}`;
-        driveLink.style.display = 'flex';
-      } else {
-        driveLink.style.display = 'none';
-      }
-
-      const ord = sp.taxonomy.order || '';
-      const fam = sp.taxonomy.family || '';
-      const morpho = document.getElementById('detailMorpho');
-      const eco = document.getElementById('detailEcology');
-
-      if (ord === 'Lepidoptera') {
-        morpho.innerText = `Lépidoptère caractérisé par une nervation alaire dense couverte d'écailles microscopiques pigmentées. Critères diagnostiques axés sur les lignes antémédianes et postmédianes des ${fam}.`;
-        eco.innerText = `Comportement thermo-dépendant. Chenille strictement inféodée aux essences végétales nourricières du maquis et des pelouses sèches.`;
-      } else if (ord === 'Coleoptera') {
-        morpho.innerText = `Coléoptère pourvu d'élytres rigides protégeant les ailes membraneuses et l'abdomen. Critères basés sur la forme du pronotum et la segmentation tarsienne.`;
-        eco.innerText = `Écologie saproxylique, floricole ou terricole. Détritivore ou prédateur régulateur selon le stade larvaire et imaginal.`;
-      } else {
-        morpho.innerText = `Spécimen documenté par diagnostic macroscopique direct. Conformité taxonomique validée au niveau générique.`;
-        eco.innerText = `Espèce inféodée aux gradients écologiques méditerranéens et insulaires. Dynamique saisonnière synchrone avec l'optimum végétatif.`;
-      }
-
-      const chips = document.getElementById('detailTaxoChips');
-      chips.innerHTML = '';
-      ['kingdom', 'phylum', 'class', 'order', 'family', 'genus'].forEach(k => {
-        if (sp.taxonomy[k]) {
-          const c = document.createElement('div');
-          c.className = 'taxo-chip';
-          c.innerHTML = `<span>${k}</span>${sp.taxonomy[k]}`;
-          chips.appendChild(c);
-        }
-      });
-
-      document.getElementById('detailLocText').innerText = sp.place || 'Lieu-dit non renseigné';
-      document.getElementById('detailDateText').innerText = `Date de relevé : ${sp.last_observed || 'Non datée'}`;
-
-      const btnFam = document.getElementById('btnIsolateFamily');
-      btnFam.onclick = () => {
-        if (sp.taxonomy.family) {
-          currentPath = [sp.taxonomy.kingdom, sp.taxonomy.phylum, sp.taxonomy.class, sp.taxonomy.order, sp.taxonomy.family].filter(Boolean);
-          displayMode = 'all';
-          renderStage();
-          closeExpertPanel();
-        }
-      };
-
-      setTimeout(() => {
-        if (!detailMap) {
-          detailMap = L.map('specimenMap');
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri'
-          }).addTo(detailMap);
-        }
-        if (sp.coordinates && sp.coordinates.lat && sp.coordinates.lng) {
-          const coords = [sp.coordinates.lat, sp.coordinates.lng];
-          detailMap.setView(coords, 12);
-          if (detailMarker) detailMap.removeLayer(detailMarker);
-          detailMarker = L.marker(coords).addTo(detailMap);
-          document.getElementById('specimenMap').style.display = 'block';
-        } else {
-          document.getElementById('specimenMap').style.display = 'none';
-        }
-        detailMap.invalidateSize();
-      }, 200);
-    }
-
-    function closeExpertPanel() {
-      document.getElementById('expertPanel').classList.remove('open');
-    }
-
-    document.getElementById('resetFilterBtn').addEventListener('click', () => {
-      currentPath = [];
-      displayMode = 'tree';
-      renderStage();
-    });
-
-    document.getElementById('globalSearch').addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim();
-      if (!q) { renderStage(); return; }
-      const matches = rawSpecies.filter(s => 
-        s.scientific_name.toLowerCase().includes(q) || 
-        (s.common_name && s.common_name.toLowerCase().includes(q))
-      );
-      renderSpeciesGrid(document.getElementById('stageContent'), matches);
-    });
   </script>
 </body>
 </html>
