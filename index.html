@@ -208,10 +208,11 @@
                 <select id="obsPageSizeSelect" class="obs-select">
                   <option value="50">50 par page</option>
                   <option value="100" selected>100 par page</option>
+                  <option value="200">200 par page</option>
                 </select>
               </div>
 
-              <!-- Contrôles de pagination légers -->
+              <!-- Pagination tactile et précise -->
               <div class="obs-paginator">
                 <button class="btn-page-nav" id="btnPagePrev" onclick="changeObsPage(-1)">&lt;</button>
                 <span id="obsPageIndicator" class="obs-page-num">Page 1 / 1</span>
@@ -222,7 +223,7 @@
             </div>
           </div>
 
-          <!-- Grille fixe anti-scintillement -->
+          <!-- Grille strictement identique au Volet 1 -->
           <div class="obs-matrix-scroll" id="obsCardsGrid"></div>
         </div>
       </div>
