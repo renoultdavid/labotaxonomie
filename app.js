@@ -5,7 +5,6 @@ let globalSpeciesData = null;
 let currentResultsList = [];
 let resultsViewMode = 'gallery';
 
-// Dictionnaire vernaculaire
 const vernMap = {
   'Animalia': 'Animaux',
   'Plantae': 'Végétaux / Plantes',
@@ -60,7 +59,6 @@ function normalizeStr(str) {
   return (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-// Filtre pour garantir une vraie espèce binomiale
 function isTrueSpecies(sp) {
   if (!sp || !sp.scientific_name) return false;
   const parts = sp.scientific_name.trim().split(/\s+/);
@@ -109,7 +107,7 @@ function switchModuleTab(moduleId, tabIndex) {
 }
 
 // ========================================================
-// 1. MODULE 1 : EXPERT, GÉO & VISUEL (INCHANGÉS)
+// 1. MODULE 1 : RECHERCHE EXPERT
 // ========================================================
 function initDeepExpertTree() {
   if (!globalSpeciesData) return;
@@ -309,7 +307,9 @@ document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
   renderResultsDOM();
 });
 
+// ========================================================
 // GÉOGRAPHIE 2D
+// ========================================================
 let geoMap = null;
 let clusterGroup = null;
 let activeGeoGroups = new Set(['all', 'Aves', 'Lepidoptera', 'Coleoptera', 'Araneae', 'Reptilia', 'Amphibia', 'Mammalia', 'Fish', 'Plantae', 'Fungi', 'Other']);
@@ -498,7 +498,9 @@ function syncGeoRightPane() {
   container.appendChild(fragment);
 }
 
+// ========================================================
 // RECHERCHE VISUELLE
+// ========================================================
 const visualTree = [
   {
     id: 'birds',
@@ -733,7 +735,7 @@ function visualNavigateToSpecies(macroId, subId) {
 }
 
 // ========================================================
-// 2. MODULE 2 - ONGLET 1 : OBSERVATIONS (RÉGULIER & PROPRE)
+// 2. MODULE 2 - ONGLET 1 : OBSERVATIONS (SYNCHRO RIGUREUSE)
 // ========================================================
 let obsFilteredData = [];
 let obsCurrentPage = 1;
@@ -762,7 +764,6 @@ function applyObsFilteringAndSorting() {
   const q = normalizeStr(document.getElementById('obsSearchInput').value);
   const sortMode = document.getElementById('obsSortSelect').value;
 
-  // Filtrage
   let baseList = globalSpeciesData;
   if (q) {
     baseList = baseList.filter(sp => {
@@ -771,14 +772,13 @@ function applyObsFilteringAndSorting() {
     });
   }
 
-  // Si on cherche par fréquence ou rareté, exclure impérativement les rangs supérieurs (Animalia, Plantae...)
+  // Filtrage strict : pas d'Animalia ou Plantae dans le top fréquence
   if (sortMode === 'freq-desc' || sortMode === 'freq-asc') {
     baseList = baseList.filter(isTrueSpecies);
   }
 
   obsFilteredData = [...baseList];
 
-  // Tri rigoureux
   obsFilteredData.sort((a, b) => {
     if (sortMode === 'date-desc') return (b.last_observed || '').localeCompare(a.last_observed || '');
     if (sortMode === 'date-asc') return (a.last_observed || '').localeCompare(b.last_observed || '');
@@ -813,6 +813,7 @@ function changeObsPage(delta) {
   document.getElementById('obsCardsGrid').scrollTop = 0;
 }
 
+// Rendu identique à la galerie du Volet 1
 function renderObsCards() {
   const container = document.getElementById('obsCardsGrid');
   container.innerHTML = '';
@@ -843,7 +844,7 @@ function renderObsCards() {
 }
 
 // ========================================================
-// 3. MODULE 2 - ONGLET 2 : STATISTIQUES AVANCÉES
+// 3. MODULE 2 - ONGLET 2 : STATISTIQUES & PHÉNOLOGIE
 // ========================================================
 function initStatsDashboard() {
   if (!globalSpeciesData) return;
@@ -854,11 +855,10 @@ function initStatsDashboard() {
   const totalTrueSpecies = trueSpeciesList.length;
   const totalObs = globalSpeciesData.reduce((acc, s) => acc + (s.obs_count || 1), 0);
 
-  // 1. Calcul de la Phénologie (12 mois)
+  // Phénologie (12 mois)
   const monthCounts = new Array(12).fill(0);
   globalSpeciesData.forEach(s => {
     if (s.last_observed) {
-      // Format attendu YYYY-MM-DD
       const parts = s.last_observed.split('-');
       if (parts.length >= 2) {
         const m = parseInt(parts[1], 10) - 1;
@@ -869,7 +869,7 @@ function initStatsDashboard() {
   const maxMonth = Math.max(...monthCounts, 1);
   const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 
-  // 2. Calcul du Donut de Rareté
+  // Donut de Rareté
   const rareCount = trueSpeciesList.filter(s => (s.obs_count || 1) === 1).length;
   const moderateCount = trueSpeciesList.filter(s => (s.obs_count || 1) >= 2 && (s.obs_count || 1) <= 4).length;
   const frequentCount = trueSpeciesList.filter(s => (s.obs_count || 1) >= 5).length;
@@ -878,18 +878,16 @@ function initStatsDashboard() {
   const pctMod = ((moderateCount / totalTrueSpecies) * 100).toFixed(0);
   const pctFreq = (100 - pctRare - pctMod);
 
-  // Donut SVG circumference = 2 * PI * r (r=45 -> circ=282.7)
   const circ = 282.7;
   const strokeRare = (pctRare / 100) * circ;
   const strokeMod = (pctMod / 100) * circ;
   const strokeFreq = (pctFreq / 100) * circ;
 
-  // 3. Top 5 Espèces Stars
+  // Top 5 Espèces
   const topSpeciesStars = [...trueSpeciesList]
     .sort((a,b) => (b.obs_count || 1) - (a.obs_count || 1))
     .slice(0, 5);
 
-  // Bannière KPI
   const kpiBanner = document.createElement('div');
   kpiBanner.className = 'stat-kpi-banner';
   kpiBanner.innerHTML = `
@@ -912,11 +910,10 @@ function initStatsDashboard() {
   `;
   container.appendChild(kpiBanner);
 
-  // Grille 2x2 des quadrants analytiques
   const grid = document.createElement('div');
   grid.className = 'stats-grid-2x2';
 
-  // CADRAN 1 : Phénologie mensuelle
+  // Cadran 1 : Phénologie
   const phenoBox = document.createElement('div');
   phenoBox.className = 'stat-box';
   let phenoBarsHtml = '';
@@ -942,7 +939,7 @@ function initStatsDashboard() {
   `;
   grid.appendChild(phenoBox);
 
-  // CADRAN 2 : Donut de Rareté & Singulatrité
+  // Cadran 2 : Donut de Rareté
   const rarityBox = document.createElement('div');
   rarityBox.className = 'stat-box';
   rarityBox.innerHTML = `
@@ -984,7 +981,7 @@ function initStatsDashboard() {
   `;
   grid.appendChild(rarityBox);
 
-  // CADRAN 3 : Podium des 5 Espèces Stars
+  // Cadran 3 : Podium 5 Espèces Stars
   const podiumBox = document.createElement('div');
   podiumBox.className = 'stat-box';
   let podiumHtml = '';
@@ -1014,10 +1011,9 @@ function initStatsDashboard() {
   `;
   grid.appendChild(podiumBox);
 
-  // CADRAN 4 : Richesse spécifique par grands biomes
+  // Cadran 4 : Biomes
   const biomeBox = document.createElement('div');
   biomeBox.className = 'stat-box';
-  
   const insectCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Insecta').length;
   const plantCount = globalSpeciesData.filter(s => s.taxonomy.kingdom === 'Plantae').length;
   const birdCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Aves').length;
