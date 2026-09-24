@@ -5,6 +5,8 @@ let globalSpeciesData = null;
 let currentResultsList = [];
 let resultsViewMode = 'gallery';
 let currentOpenSpecies = null;
+let sheetWorldMap = null;
+let sheetWorldTileLayer = null;
 
 const vernMap = {
   'Animalia': 'Animaux',
@@ -1080,22 +1082,22 @@ function openSpeciesSheet(sp) {
 
   const overlay = document.getElementById('speciesSheetOverlay');
 
-  // Photo pure sans rien dessus (Volet Gauche)
+  // Photo pure sans texte au volet gauche
   document.getElementById('sheetHeroImg').src = sp.photo_url || 'https://via.placeholder.com/900x900/080c14/475569?text=?';
 
-  // Volet Droit
+  // Volet droit
   document.getElementById('sheetHeroSci').innerText = sp.scientific_name;
   document.getElementById('sheetHeroVern').innerText = sp.common_name || sp.taxonomy.genus || 'Taxon validé';
   document.getElementById('sheetHeroRank').innerText = sp.taxonomy.rank || (isTrueSpecies(sp) ? 'Espèce' : 'Taxon supérieur');
 
-  // Badge UICN
+  // Statut UICN
   const iucnEl = document.getElementById('sheetHeroIucn');
   const rawStatus = (sp.iucn_status || sp.conservation_status || 'LC').toUpperCase().trim();
   const iucnData = iucnDefinitions[rawStatus] || iucnDefinitions['LC'];
   iucnEl.className = `sheet-iucn-badge ${iucnData.class}`;
   iucnEl.innerText = iucnData.label;
 
-  // Remettre sur le 1er onglet
+  // Remise au premier onglet
   switchSheetTab(0);
 
   // Monographie
@@ -1112,6 +1114,9 @@ function openSpeciesSheet(sp) {
 
   // Apparentés
   populateRelatedSpecies(sp);
+
+  // Carte mondiale
+  initOrUpdateWorldMap(sp);
 
   overlay.classList.add('active');
 }
@@ -1138,12 +1143,42 @@ function switchSheetTab(tabIndex) {
 
   const drawers = document.querySelectorAll('.sheet-drawer');
   drawers.forEach((d, i) => d.classList.toggle('active', i === tabIndex));
+
+  if (tabIndex === 1 && sheetWorldMap) {
+    setTimeout(() => { sheetWorldMap.invalidateSize(); }, 80);
+  }
 }
 
-// MOTEUR DE MONOGRAPHIE FOUILLEE ET COMPLETE
+// CARTE DE RÉPARTITION MONDIALE (GBIF / INATURALIST LAYER)
+function initOrUpdateWorldMap(sp) {
+  const mapContainer = document.getElementById('sheetWorldMapLeaflet');
+  if (!mapContainer) return;
+
+  if (!sheetWorldMap) {
+    sheetWorldMap = L.map('sheetWorldMapLeaflet', { minZoom: 1, maxZoom: 8 }).setView([20, 0], 2);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri'
+    }).addTo(sheetWorldMap);
+  }
+
+  if (sheetWorldTileLayer) {
+    sheetWorldMap.removeLayer(sheetWorldTileLayer);
+    sheetWorldTileLayer = null;
+  }
+
+  // Intégration de la couche mondiale d'occurrences réelles si l'ID iNaturalist existe
+  if (sp.id && !isNaN(sp.id)) {
+    sheetWorldTileLayer = L.tileLayer(`https://api.inaturalist.org/v1/points/{z}/{x}/{y}.png?taxon_id=${sp.id}&color=%2310b981`, {
+      opacity: 0.85,
+      maxZoom: 8
+    }).addTo(sheetWorldMap);
+  }
+}
+
+// MONOGRAPHIE RÉDIGÉE SANS FORMULES MALADROITES
 function generateSpontaneousMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
-  contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire encyclopédique et compilation du diagnostic...`;
+  contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire naturaliste...`;
 
   const queryTitle = encodeURIComponent(sp.scientific_name);
   const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=1600&titles=${queryTitle}&format=json&origin=*`;
@@ -1154,8 +1189,8 @@ function generateSpontaneousMonograph(sp) {
       const pages = data.query ? data.query.pages : null;
       const pageId = pages ? Object.keys(pages)[0] : '-1';
 
-      if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 80) {
-        renderMonographHTML(sp, pages[pageId].extract.trim(), "Notice naturaliste encyclopédique");
+      if (pageId !== '-1' && pages[pageId].extract && pages[pageId].extract.length > 100) {
+        renderMonographHTML(sp, pages[pageId].extract.trim(), "Notice encyclopédique naturaliste");
       } else {
         renderSyntheticMonograph(sp);
       }
@@ -1173,18 +1208,18 @@ function renderSyntheticMonograph(sp) {
   const f = sp.taxonomy.family ? `la famille des <em>${sp.taxonomy.family}</em>` : 'une lignée spécialisée';
   const g = sp.taxonomy.genus ? `du genre <em>${sp.taxonomy.genus}</em>` : '';
   const obs = sp.obs_count || 1;
-  const place = sp.place ? `Station de référence : <strong>${sp.place}</strong>` : 'Localisation générale répertoriée';
-  const dateStr = sp.last_observed ? `relevé le ${sp.last_observed}` : 'contact pérenne';
+  const place = sp.place ? `Station : <strong>${sp.place}</strong>` : 'Station renseignée';
+  const dateStr = sp.last_observed ? `relevé du <strong>${sp.last_observed}</strong>` : 'contact validé';
 
   const syntheticText = `
     <p><strong>${sci}</strong>, ${vern}, est un organisme appartenant au grand règne des <strong>${k}</strong>, rattaché à l'ordre des <strong>${o}</strong> au sein de ${f} ${g}.</p>
     
     <p><strong>Écologie, Biotopes & Morphologie :</strong> Ce taxon présente l'ensemble des caractères morpho-anatomiques distinctifs de son clade. Sur le plan autoécologique, il exploite préférentiellement les milieux naturels préservés et les étages bioclimatiques caractéristiques de son aire de répartition, participant activement aux réseaux d'interactions trophiques et fonctionnelles de son biotope d'accueil.</p>
     
-    <p><strong>Statut au sein de la Collection :</strong> Ce taxon fait l'objet d'un suivi au laboratoire avec <strong>${obs} relevé(s)</strong> recensé(s) (${place}, ${dateStr}). Sa présence témoigne de la représentativité de l'inventaire écologique conduit sur le terrain.</p>
+    <p><strong>Données de l'inventaire :</strong> Espèce répertoriée dans la collection avec <strong>${obs} observation(s)</strong> (${place}, ${dateStr}).</p>
   `;
 
-  renderMonographHTML(sp, syntheticText, "Monographie synthétique élaborée par le Laboratoire Taxonomique");
+  renderMonographHTML(sp, syntheticText, "Monographie synthétique de l'Observatoire");
 }
 
 function renderMonographHTML(sp, textBody, sourceLabel) {
@@ -1320,7 +1355,7 @@ function populateRelatedSpecies(sp) {
 }
 
 // ========================================================
-// 7. MODALE DE MOSAÏQUE DES PHOTOS DE L'ESPÈCE & SWITCH EN GRAND
+// 7. MINI-MOSAÏQUE DES CLICHÉS & SWITCH INSTANTANÉ EN GRAND
 // ========================================================
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
@@ -1328,40 +1363,78 @@ function openSpeciesPhotosModal(speciesId) {
   if (!sp) return;
 
   const modal = document.getElementById('obsPhotosModal');
-  document.getElementById('obsPhotosModalTitle').innerText = `${sp.scientific_name} (cliquer pour afficher en grand)`;
+  document.getElementById('obsPhotosModalTitle').innerText = `${sp.scientific_name} (toucher un cliché pour l'afficher à gauche)`;
+
+  // Lien direct dossier Drive
+  const driveBtn = document.getElementById('driveFolderDirectLink');
+  if (sp.drive_folder_id) {
+    driveBtn.href = `https://drive.google.com/drive/folders/${sp.drive_folder_id}`;
+    driveBtn.style.display = 'inline-flex';
+  } else {
+    driveBtn.style.display = 'none';
+  }
 
   const grid = document.getElementById('obsPhotosModalGrid');
-  grid.innerHTML = '';
-
-  // Trouve toutes les observations répertoriées sous ce même nom scientifique
-  const allSightings = globalSpeciesData.filter(s => s.scientific_name === sp.scientific_name);
-
-  allSightings.forEach((sighting, idx) => {
-    const card = document.createElement('div');
-    card.className = 'gallery-card';
-    const thumb = sighting.photo_url || sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
-
-    // AU CLIC : BASCULE DE LA PHOTO DU VOLET GAUCHE EN GRAND FORMAT
-    card.onclick = () => {
-      document.getElementById('sheetHeroImg').src = thumb;
-      // Met à jour la station et la date dans l'onglet terrain si dispo
-      populateFieldData(sighting);
-      closeObsPhotosModal();
-    };
-
-    card.innerHTML = `
-      <img class="gallery-photo" src="${thumb}" alt="" loading="lazy" />
-      <div class="gallery-overlay"></div>
-      <div class="gallery-text">
-        <span class="gallery-latin">Cliché #${idx + 1}</span>
-        <span class="gallery-vern">${sighting.place ? sighting.place.split(',')[0] : 'Station'}</span>
-        <span class="gallery-meta">${sighting.last_observed || 'Non daté'}</span>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
-
+  grid.innerHTML = `<div style="color:var(--text-dim); padding:1rem;"><span class="sheet-loading-spinner"></span> Recherche des clichés de l'espèce...</div>`;
   modal.classList.add('open');
+
+  // Interrogation de l'API iNaturalist avec le taxon ID pour extraire les différents clichés authentiques
+  fetch(`https://api.inaturalist.org/v1/observations?taxon_id=${sp.id}&per_page=12&photos=true`)
+    .then(res => res.json())
+    .then(data => {
+      grid.innerHTML = '';
+      const photosFound = [];
+
+      // Ajout de la photo de référence principale
+      if (sp.photo_url) {
+        photosFound.push({ url: sp.photo_url, place: sp.place, date: sp.last_observed });
+      }
+
+      if (data && data.results) {
+        data.results.forEach(obs => {
+          if (obs.photos && obs.photos.length > 0) {
+            obs.photos.forEach(p => {
+              const fullUrl = p.url ? p.url.replace('square', 'medium') : null;
+              if (fullUrl && !photosFound.some(pf => pf.url === fullUrl)) {
+                photosFound.push({
+                  url: fullUrl,
+                  place: obs.place_guess || sp.place,
+                  date: obs.observed_on || sp.last_observed
+                });
+              }
+            });
+          }
+        });
+      }
+
+      photosFound.slice(0, 16).forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'gallery-card';
+        card.onclick = () => {
+          // BASCULE DE LA PHOTO À GAUCHE EN GRAND FORMAT
+          document.getElementById('sheetHeroImg').src = item.url;
+          closeObsPhotosModal();
+        };
+
+        card.innerHTML = `
+          <img class="gallery-photo" src="${item.url}" alt="" loading="lazy" />
+          <div class="gallery-overlay"></div>
+          <div class="gallery-text">
+            <span class="gallery-latin">Cliché #${idx + 1}</span>
+            <span class="gallery-vern">${item.place ? item.place.split(',')[0] : 'Station'}</span>
+            <span class="gallery-meta">${item.date || 'Relevé'}</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    })
+    .catch(() => {
+      grid.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'gallery-card';
+      card.innerHTML = `<img class="gallery-photo" src="${sp.photo_url}" alt="" />`;
+      grid.appendChild(card);
+    });
 }
 
 function closeObsPhotosModal() {
