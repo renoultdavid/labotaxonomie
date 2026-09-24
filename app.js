@@ -8,8 +8,6 @@ let currentOpenSpecies = null;
 let sheetWorldMap = null;
 let sheetWorldTileLayer = null;
 
-// RENSEIGNE ICI TON PSEUDO INATURALIST SI TU EN AS UN (ex: 'david_renoult')
-// Si laissé vide (''), l'application ne prend QUE les données de ton fichier data.json !
 const MY_INATURALIST_USERNAME = ''; 
 
 const vernMap = {
@@ -66,12 +64,53 @@ function normalizeStr(str) {
   return (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-function isTrueSpecies(sp) {
-  if (!sp || !sp.scientific_name) return false;
-  const parts = sp.scientific_name.trim().split(/\s+/);
-  return parts.length >= 2 && !['Animalia', 'Plantae', 'Fungi', 'Arthropoda', 'Chordata', 'Insecta'].includes(parts[0]);
+// ========================================================
+// TYPOLOGIE SCIENTIFIQUE DES TAXONS
+// ========================================================
+function getTaxonCategory(sp) {
+  if (!sp || !sp.scientific_name) return 'unknown';
+  const name = sp.scientific_name.trim();
+  const parts = name.split(/\s+/);
+
+  // Rang supérieur (1 seul mot : Animalia, Plantae, Agaricus...)
+  if (parts.length === 1) return 'supraspecific';
+
+  // Mention d'indétermination explicite (ex: "Ophrys sp.", "Orchis indet.")
+  if (parts[1].toLowerCase() === 'sp.' || parts[1].toLowerCase() === 'sp' || parts[1].toLowerCase() === 'indet.') {
+    return 'supraspecific';
+  }
+
+  // Sous-espèce ou variété trinominale (ex: Regiscolia maculata flavifrons)
+  if (parts.length >= 3 && !parts.includes('x') && !parts.includes('var.') && !parts.includes('subsp.')) {
+    return 'subspecies';
+  }
+  if (parts.includes('subsp.') || parts.includes('var.')) {
+    return 'subspecies';
+  }
+
+  // Espèce binomiale stricte (Genre + espèce)
+  if (parts.length === 2) {
+    const excludedRoots = ['Animalia', 'Plantae', 'Fungi', 'Arthropoda', 'Chordata', 'Insecta'];
+    if (excludedRoots.includes(parts[0])) return 'supraspecific';
+    return 'species';
+  }
+
+  return 'species';
 }
 
+function isTrueSpecies(sp) {
+  const cat = getTaxonCategory(sp);
+  return cat === 'species' || cat === 'subspecies';
+}
+
+function getTaxonRankLabel(sp) {
+  const cat = getTaxonCategory(sp);
+  if (cat === 'species') return 'Espèce';
+  if (cat === 'subspecies') return 'Sous-espèce';
+  return 'Taxon supérieur';
+}
+
+// Fabrication de carte universelle
 function createOriginalGalleryCard(sp, metaText, countBadge) {
   const card = document.createElement('div');
   card.className = 'gallery-card';
@@ -99,12 +138,18 @@ fetch('data.json')
   .then(res => res.json())
   .then(data => {
     globalSpeciesData = data;
-    document.getElementById('treeTotalCount').innerText = `${data.length.toLocaleString('fr-FR')} espèces`;
+
+    // Décompte scientifique exact
+    const speciesOnlyCount = data.filter(s => getTaxonCategory(s) === 'species').length;
+    const totalTaxa = data.length;
+
+    document.getElementById('treeTotalCount').innerText = `${speciesOnlyCount.toLocaleString('fr-FR')} espèces (${totalTaxa.toLocaleString('fr-FR')} taxons)`;
     initDeepExpertTree();
     restoreStateFromURL();
   })
   .catch(err => console.warn('Erreur chargement data.json...', err));
 
+// Navigation avec persistance URL
 function updateURLHash(moduleId, tabIndex, speciesId) {
   if (speciesId) {
     window.location.hash = `species/${speciesId}`;
@@ -289,10 +334,11 @@ function renderExpertResults(rank, value, pathContext) {
     document.getElementById('resultsFilterTitle').innerText = `${rank.toUpperCase()} : ${value} ${vernMap[value] ? '(' + vernMap[value] + ')' : ''}`;
   } else {
     currentResultsList = globalSpeciesData;
-    document.getElementById('resultsFilterTitle').innerText = 'Ensemble des espèces répertoriées';
+    document.getElementById('resultsFilterTitle').innerText = 'Ensemble des taxons répertoriés';
   }
 
-  document.getElementById('resultsCountBadge').innerText = `${currentResultsList.length.toLocaleString('fr-FR')} espèce(s)`;
+  const spCount = currentResultsList.filter(s => getTaxonCategory(s) === 'species').length;
+  document.getElementById('resultsCountBadge').innerText = `${spCount.toLocaleString('fr-FR')} espèce(s) • ${currentResultsList.length.toLocaleString('fr-FR')} taxon(s)`;
   renderExpertResultsDOM();
 }
 
@@ -324,7 +370,7 @@ function renderExpertResultsDOM() {
           <img class="species-mini-thumb" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
           <div class="species-text">
             <span class="species-latin">${sp.scientific_name}</span>
-            <span class="species-vernacular">${sp.common_name || sp.taxonomy.family || 'Taxon validé'}</span>
+            <span class="species-vernacular">${sp.common_name || sp.taxonomy.family || getTaxonRankLabel(sp)}</span>
           </div>
         </div>
         <button class="btn-open-fiche">Fiche</button>
@@ -351,12 +397,13 @@ document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
     return rawTokens.every(tok => fullSearchable.includes(tok));
   });
 
+  const spCount = currentResultsList.filter(s => getTaxonCategory(s) === 'species').length;
   document.getElementById('resultsFilterTitle').innerText = `Recherche : "${e.target.value}"`;
-  document.getElementById('resultsCountBadge').innerText = `${currentResultsList.length.toLocaleString('fr-FR')} résultat(s)`;
+  document.getElementById('resultsCountBadge').innerText = `${spCount.toLocaleString('fr-FR')} espèce(s) • ${currentResultsList.length.toLocaleString('fr-FR')} taxon(s)`;
   renderExpertResultsDOM();
 });
 
-// 2. GÉO 2D
+// 2. GÉOGRAPHIE 2D
 let geoMap = null;
 let clusterGroup = null;
 let activeGeoGroups = new Set(['all', 'Aves', 'Lepidoptera', 'Coleoptera', 'Araneae', 'Reptilia', 'Amphibia', 'Mammalia', 'Fish', 'Plantae', 'Fungi', 'Other']);
@@ -520,7 +567,9 @@ function syncGeoRightPane() {
     }
   });
 
-  document.getElementById('geoVisibleCount').innerText = `${visibleSpecies.length.toLocaleString('fr-FR')} espèce(s)`;
+  const spCount = visibleSpecies.filter(s => getTaxonCategory(s) === 'species').length;
+  document.getElementById('geoVisibleCount').innerText = `${spCount.toLocaleString('fr-FR')} espèce(s) • ${visibleSpecies.length.toLocaleString('fr-FR')} taxon(s)`;
+
   const container = document.getElementById('geoCardsContainer');
   container.innerHTML = '';
 
@@ -656,7 +705,9 @@ function visualNavigateToRoot() {
   document.getElementById('visualBreadcrumbs').innerHTML = `
     <span class="visual-crumb-link" onclick="visualNavigateToRoot()">🌳 Le Grand Monde Vivant</span>
   `;
-  document.getElementById('visualCurrentCount').innerText = `${globalSpeciesData.length.toLocaleString('fr-FR')} espèces au total`;
+  const speciesOnlyCount = globalSpeciesData.filter(s => getTaxonCategory(s) === 'species').length;
+  document.getElementById('visualCurrentCount').innerText = `${speciesOnlyCount.toLocaleString('fr-FR')} espèces • ${globalSpeciesData.length.toLocaleString('fr-FR')} taxons`;
+
   const container = document.getElementById('visualContentArea');
   container.innerHTML = '';
   const grid = document.createElement('div');
@@ -674,7 +725,7 @@ function visualNavigateToRoot() {
     card.innerHTML = `
       <img class="visual-card-bg" src="${samplePhoto}" alt="${group.title}" loading="lazy" />
       <div class="visual-card-overlay"></div>
-      <span class="visual-card-badge">${count.toLocaleString('fr-FR')} espèces</span>
+      <span class="visual-card-badge">${count.toLocaleString('fr-FR')} taxons</span>
       <div class="visual-card-content">
         <div class="visual-card-title">${group.title}</div>
         <div class="visual-card-subtitle">${group.desc}</div>
@@ -696,7 +747,8 @@ function visualNavigateToSubgroups(macroId) {
     <span class="visual-crumb-separator">&gt;</span>
     <span style="color:#fff;">${macro.title}</span>
   `;
-  document.getElementById('visualCurrentCount').innerText = `${matchingMacro.length.toLocaleString('fr-FR')} espèce(s)`;
+  const spCount = matchingMacro.filter(s => getTaxonCategory(s) === 'species').length;
+  document.getElementById('visualCurrentCount').innerText = `${spCount.toLocaleString('fr-FR')} espèce(s) • ${matchingMacro.length.toLocaleString('fr-FR')} taxon(s)`;
 
   const container = document.getElementById('visualContentArea');
   container.innerHTML = '';
@@ -715,7 +767,7 @@ function visualNavigateToSubgroups(macroId) {
     card.innerHTML = `
       <img class="visual-card-bg" src="${samplePhoto}" alt="${sub.title}" loading="lazy" />
       <div class="visual-card-overlay"></div>
-      <span class="visual-card-badge">${count.toLocaleString('fr-FR')} espèces</span>
+      <span class="visual-card-badge">${count.toLocaleString('fr-FR')} taxons</span>
       <div class="visual-card-content">
         <div class="visual-card-title">${sub.title}</div>
         <div class="visual-card-subtitle">${sub.desc}</div>
@@ -742,7 +794,8 @@ function visualNavigateToSpecies(macroId, subId) {
     <span class="visual-crumb-separator">&gt;</span>
     <span style="color:#fff;">${sub.title}</span>
   `;
-  document.getElementById('visualCurrentCount').innerText = `${matchingSpecies.length.toLocaleString('fr-FR')} espèce(s)`;
+  const spCount = matchingSpecies.filter(s => getTaxonCategory(s) === 'species').length;
+  document.getElementById('visualCurrentCount').innerText = `${spCount.toLocaleString('fr-FR')} espèce(s) • ${matchingSpecies.length.toLocaleString('fr-FR')} taxon(s)`;
 
   const container = document.getElementById('visualContentArea');
   container.innerHTML = '';
@@ -757,7 +810,7 @@ function visualNavigateToSpecies(macroId, subId) {
   container.appendChild(galleryDiv);
 }
 
-// 4. OBSERVATIONS
+// 4. OBSERVATIONS (TRI PAR ESPÈCES VÉRITABLES)
 let obsFilteredData = [];
 let obsCurrentPage = 1;
 let obsPageSize = 100;
@@ -793,6 +846,7 @@ function applyObsFilteringAndSorting() {
     });
   }
 
+  // Filtrage strict : exclure impérativement les rangs supérieurs des classements d'espèces
   if (sortMode === 'freq-desc' || sortMode === 'freq-asc') {
     baseList = baseList.filter(isTrueSpecies);
   }
@@ -820,7 +874,8 @@ function updateObsPagination() {
 
   if (obsCurrentPage > totalPages) obsCurrentPage = totalPages;
 
-  document.getElementById('obsCountBadge').innerText = `${totalItems.toLocaleString('fr-FR')} observation(s)`;
+  const spCount = obsFilteredData.filter(s => getTaxonCategory(s) === 'species').length;
+  document.getElementById('obsCountBadge').innerText = `${spCount.toLocaleString('fr-FR')} espèce(s) • ${totalItems.toLocaleString('fr-FR')} taxon(s)`;
   document.getElementById('obsPageIndicator').innerText = `Page ${obsCurrentPage} / ${totalPages}`;
   document.getElementById('btnPagePrev').disabled = (obsCurrentPage <= 1);
   document.getElementById('btnPageNext').disabled = (obsCurrentPage >= totalPages);
@@ -855,13 +910,19 @@ function renderObsCards() {
   container.appendChild(galleryDiv);
 }
 
-// 5. STATISTIQUES & PHÉNOLOGIE
+// ========================================================
+// 5. STATISTIQUES & RATIOS (RECTIFICATION TAXON VS ESPÈCE)
+// ========================================================
 function initStatsDashboard() {
   if (!globalSpeciesData) return;
   const container = document.getElementById('statsDashboardArea');
   container.innerHTML = '';
 
-  const trueSpeciesList = globalSpeciesData.filter(isTrueSpecies);
+  const totalTaxa = globalSpeciesData.length;
+  const trueSpeciesList = globalSpeciesData.filter(s => getTaxonCategory(s) === 'species');
+  const subspeciesList = globalSpeciesData.filter(s => getTaxonCategory(s) === 'subspecies');
+  const supraList = globalSpeciesData.filter(s => getTaxonCategory(s) === 'supraspecific');
+
   const totalTrueSpecies = trueSpeciesList.length;
   const totalObs = globalSpeciesData.reduce((acc, s) => acc + (s.obs_count || 1), 0);
 
@@ -878,6 +939,7 @@ function initStatsDashboard() {
   const maxMonth = Math.max(...monthCounts, 1);
   const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 
+  // Rareté calculée strictement sur les espèces réelles
   const rareCount = trueSpeciesList.filter(s => (s.obs_count || 1) === 1).length;
   const moderateCount = trueSpeciesList.filter(s => (s.obs_count || 1) >= 2 && (s.obs_count || 1) <= 4).length;
   const frequentCount = trueSpeciesList.filter(s => (s.obs_count || 1) >= 5).length;
@@ -899,20 +961,24 @@ function initStatsDashboard() {
   kpiBanner.className = 'stat-kpi-banner';
   kpiBanner.innerHTML = `
     <div class="stat-kpi-card">
-      <div class="stat-kpi-label">Espèces binominales</div>
+      <div class="stat-kpi-label">Espèces véritables</div>
       <div class="stat-kpi-val">${totalTrueSpecies.toLocaleString('fr-FR')}</div>
+      <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.2rem;">+ ${subspeciesList.length} sous-espèces</div>
+    </div>
+    <div class="stat-kpi-card">
+      <div class="stat-kpi-label">Total des taxons inventoriés</div>
+      <div class="stat-kpi-val" style="color: var(--accent-cyan);">${totalTaxa.toLocaleString('fr-FR')}</div>
+      <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.2rem;">dont ${supraList.length} rangs supérieurs</div>
     </div>
     <div class="stat-kpi-card">
       <div class="stat-kpi-label">Observations cumulées</div>
-      <div class="stat-kpi-val" style="color: var(--accent-cyan);">${totalObs.toLocaleString('fr-FR')}</div>
+      <div class="stat-kpi-val" style="color: var(--accent-amber);">${totalObs.toLocaleString('fr-FR')}</div>
+      <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.2rem;">contacts sur le terrain</div>
     </div>
     <div class="stat-kpi-card">
-      <div class="stat-kpi-label">Indice de rareté</div>
-      <div class="stat-kpi-val" style="color: var(--accent-amber);">${pctRare} %</div>
-    </div>
-    <div class="stat-kpi-card">
-      <div class="stat-kpi-label">Moyenne d'obs / taxon</div>
-      <div class="stat-kpi-val" style="color: var(--accent-emerald);">${(totalObs / totalTrueSpecies).toFixed(1)}</div>
+      <div class="stat-kpi-label">Taux d'espèces solitaires</div>
+      <div class="stat-kpi-val" style="color: var(--accent-emerald);">${pctRare} %</div>
+      <div style="font-size:0.7rem; color:var(--text-dim); margin-top:0.2rem;">${rareCount} espèces vues 1 fois</div>
     </div>
   `;
   container.appendChild(kpiBanner);
@@ -920,6 +986,7 @@ function initStatsDashboard() {
   const grid = document.createElement('div');
   grid.className = 'stats-grid-2x2';
 
+  // Cadran 1 : Phénologie
   const phenoBox = document.createElement('div');
   phenoBox.className = 'stat-box';
   let phenoBarsHtml = '';
@@ -945,11 +1012,12 @@ function initStatsDashboard() {
   `;
   grid.appendChild(phenoBox);
 
+  // Cadran 2 : Profil de rareté
   const rarityBox = document.createElement('div');
   rarityBox.className = 'stat-box';
   rarityBox.innerHTML = `
     <div class="stat-box-header">
-      <div class="stat-box-title">🎯 Profil de Rareté des Espèces</div>
+      <div class="stat-box-title">🎯 Profil de Rareté des Espèces Véritables</div>
       <span style="font-size:0.75rem; color:var(--text-dim);">Distribution des contacts</span>
     </div>
     <div class="donut-wrap">
@@ -986,6 +1054,7 @@ function initStatsDashboard() {
   `;
   grid.appendChild(rarityBox);
 
+  // Cadran 3 : Espèces stars
   const podiumBox = document.createElement('div');
   podiumBox.className = 'stat-box';
   let podiumHtml = '';
@@ -1008,24 +1077,25 @@ function initStatsDashboard() {
 
   podiumBox.innerHTML = `
     <div class="stat-box-header">
-      <div class="stat-box-title">👑 Les 5 Espèces Reines du Terrain</div>
-      <span style="font-size:0.75rem; color:var(--text-dim);">Les plus documentées</span>
+      <div class="stat-box-title">👑 Top Espèces les plus observées</div>
+      <span style="font-size:0.75rem; color:var(--text-dim);">Binômes stricts</span>
     </div>
     <div class="podium-list">${podiumHtml}</div>
   `;
   grid.appendChild(podiumBox);
 
+  // Cadran 4 : Pôles
   const biomeBox = document.createElement('div');
   biomeBox.className = 'stat-box';
-  const insectCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Insecta').length;
-  const plantCount = globalSpeciesData.filter(s => s.taxonomy.kingdom === 'Plantae').length;
-  const birdCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Aves').length;
-  const marineCount = globalSpeciesData.filter(s => ['Actinopterygii', 'Porifera', 'Cnidaria', 'Malacostraca'].includes(s.taxonomy.class) || s.taxonomy.phylum === 'Porifera').length;
+  const insectCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Insecta' && isTrueSpecies(s)).length;
+  const plantCount = globalSpeciesData.filter(s => s.taxonomy.kingdom === 'Plantae' && isTrueSpecies(s)).length;
+  const birdCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Aves' && isTrueSpecies(s)).length;
+  const marineCount = globalSpeciesData.filter(s => (['Actinopterygii', 'Porifera', 'Cnidaria', 'Malacostraca'].includes(s.taxonomy.class) || s.taxonomy.phylum === 'Porifera') && isTrueSpecies(s)).length;
 
   biomeBox.innerHTML = `
     <div class="stat-box-header">
-      <div class="stat-box-title">🌐 Équilibre des Grands Pôles Biologiques</div>
-      <span style="font-size:0.75rem; color:var(--text-dim);">Poids de biodiversité</span>
+      <div class="stat-box-title">🌐 Diversité spécifique par Pôle (Espèces)</div>
+      <span style="font-size:0.75rem; color:var(--text-dim);">Hors rangs indéterminés</span>
     </div>
     <div style="display:flex; flex-direction:column; gap:0.85rem; justify-content:center; height:100%;">
       <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
@@ -1081,7 +1151,7 @@ function openSpeciesSheet(sp) {
   document.getElementById('sheetHeroImg').src = sp.photo_url || 'https://via.placeholder.com/900x900/080c14/475569?text=?';
   document.getElementById('sheetHeroSci').innerText = sp.scientific_name;
   document.getElementById('sheetHeroVern').innerText = sp.common_name || sp.taxonomy.genus || 'Taxon validé';
-  document.getElementById('sheetHeroRank').innerText = sp.taxonomy.rank || (isTrueSpecies(sp) ? 'Espèce' : 'Taxon supérieur');
+  document.getElementById('sheetHeroRank').innerText = getTaxonRankLabel(sp);
 
   const iucnEl = document.getElementById('sheetHeroIucn');
   const rawStatus = (sp.iucn_status || sp.conservation_status || 'LC').toUpperCase().trim();
@@ -1154,7 +1224,7 @@ function initOrUpdateWorldMap(sp) {
   }
 }
 
-// MONOGRAPHIE NATURALISTE STRUCTURÉE (3 CHAPITRES NOBLES)
+// MONOGRAPHIE NATURALISTE STRUCTURÉE
 function generateDeepNaturalistMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
   contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire naturaliste...`;
@@ -1182,13 +1252,11 @@ function generateDeepNaturalistMonograph(sp) {
 function formatAndRenderWikiMonograph(sp, rawText) {
   const contentEl = document.getElementById('sheetWikiContent');
 
-  // Nettoyage rigoureux des artefacts Wikipédia
   let cleanText = rawText
     .replace(/==+.*?==+/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Extraction des phrases clés
   const sentences = cleanText.split('. ').filter(s => s.length > 20);
   const intro = sentences.slice(0, 3).join('. ') + '.';
   const biology = sentences.slice(3, 7).join('. ') + (sentences.length > 3 ? '.' : '');
@@ -1196,6 +1264,7 @@ function formatAndRenderWikiMonograph(sp, rawText) {
   const obs = sp.obs_count || 1;
   const place = sp.place ? `Dernière station observée : <strong>${sp.place}</strong>` : 'Station renseignée';
   const dateStr = sp.last_observed ? `relevé du <strong>${sp.last_observed}</strong>` : 'contact pérenne';
+  const rank = getTaxonRankLabel(sp).toLowerCase();
 
   contentEl.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:1.1rem;">
@@ -1212,7 +1281,7 @@ function formatAndRenderWikiMonograph(sp, rawText) {
 
       <div>
         <h4 style="color:var(--accent-amber); font-size:0.85rem; text-transform:uppercase; margin-bottom:0.35rem; letter-spacing:0.05em;">Données de l'Inventaire de Terrain</h4>
-        <p style="line-height:1.75; font-size:0.925rem;">Taxon répertorié dans la collection avec <strong>${obs} observation(s)</strong> (${place}, ${dateStr}).</p>
+        <p style="line-height:1.75; font-size:0.925rem;">${rank.charAt(0).toUpperCase() + rank.slice(1)} répertorié(e) dans la collection avec <strong>${obs} observation(s)</strong> (${place}, ${dateStr}).</p>
       </div>
     </div>
     <div style="margin-top:1.25rem; padding-top:0.75rem; border-top:1px dashed var(--border); font-size:0.725rem; color:var(--text-dim); text-align:right;">
@@ -1232,6 +1301,7 @@ function renderAuthenticFieldMonograph(sp) {
   const obs = sp.obs_count || 1;
   const place = sp.place ? `Dernière station observée : <strong>${sp.place}</strong>` : 'Station renseignée';
   const dateStr = sp.last_observed ? `relevé du <strong>${sp.last_observed}</strong>` : 'contact pérenne';
+  const rank = getTaxonRankLabel(sp).toLowerCase();
 
   contentEl.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:1.1rem;">
@@ -1247,7 +1317,7 @@ function renderAuthenticFieldMonograph(sp) {
 
       <div>
         <h4 style="color:var(--accent-amber); font-size:0.85rem; text-transform:uppercase; margin-bottom:0.35rem; letter-spacing:0.05em;">Données de l'Inventaire de Terrain</h4>
-        <p style="line-height:1.75; font-size:0.925rem;">Taxon répertorié dans la collection avec <strong>${obs} observation(s)</strong> (${place}, ${dateStr}).</p>
+        <p style="line-height:1.75; font-size:0.925rem;">${rank.charAt(0).toUpperCase() + rank.slice(1)} répertorié(e) dans la collection avec <strong>${obs} observation(s)</strong> (${place}, ${dateStr}).</p>
       </div>
     </div>
     <div style="margin-top:1.25rem; padding-top:0.75rem; border-top:1px dashed var(--border); font-size:0.725rem; color:var(--text-dim); text-align:right;">
@@ -1312,7 +1382,7 @@ function populateTaxoLineage(sp) {
   spRow.className = 'sheet-lineage-row';
   spRow.style.borderColor = 'var(--accent-cyan)';
   spRow.innerHTML = `
-    <span class="sheet-lineage-rank" style="color:var(--accent-cyan);">Espèce</span>
+    <span class="sheet-lineage-rank" style="color:var(--accent-cyan);">${getTaxonRankLabel(sp)}</span>
     <span class="sheet-lineage-name" style="color:var(--accent-cyan); font-weight:800;">${sp.scientific_name}</span>
     <span class="sheet-lineage-vern" style="color:#fff;">${sp.common_name || ''}</span>
   `;
@@ -1354,11 +1424,11 @@ function populateRelatedSpecies(sp) {
   const family = sp.taxonomy.family;
 
   let related = globalSpeciesData.filter(s => s.id !== sp.id && s.taxonomy.genus === genus);
-  let titleText = `Autres espèces du genre ${genus}`;
+  let titleText = `Autres taxons du genre ${genus}`;
 
   if (related.length === 0 && family) {
     related = globalSpeciesData.filter(s => s.id !== sp.id && s.taxonomy.family === family);
-    titleText = `Autres espèces de la famille des ${family}`;
+    titleText = `Autres taxons de la famille des ${family}`;
   }
 
   document.getElementById('sheetRelatedTitle').innerText = `${titleText} (${related.length} dans la collection)`;
@@ -1373,9 +1443,7 @@ function populateRelatedSpecies(sp) {
   });
 }
 
-// ========================================================
 // 7. CLICHÉS MULTIPLES STRICTEMENT PERSONNELS
-// ========================================================
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
   const sp = globalSpeciesData.find(s => String(s.id) === String(speciesId));
@@ -1384,7 +1452,6 @@ function openSpeciesPhotosModal(speciesId) {
   const modal = document.getElementById('obsPhotosModal');
   document.getElementById('obsPhotosModalTitle').innerText = `${sp.scientific_name} (toucher un cliché pour l'afficher à gauche)`;
 
-  // Bouton dossier Drive HD
   const driveBtn = document.getElementById('driveFolderDirectLink');
   if (sp.drive_folder_id) {
     driveBtn.href = `https://drive.google.com/drive/folders/${sp.drive_folder_id}`;
@@ -1396,7 +1463,7 @@ function openSpeciesPhotosModal(speciesId) {
   const grid = document.getElementById('obsPhotosModalGrid');
   grid.innerHTML = '';
 
-  // 1. RECHERCHE DANS TON PROPRE FICHIER DATA.JSON EN PRIORITÉ ABSOLUE
+  // Recherche dans ton inventaire data.json en priorité absolue
   const myOwnSightings = globalSpeciesData.filter(s => s.scientific_name === sp.scientific_name);
   const myPhotosList = [];
 
@@ -1410,7 +1477,6 @@ function openSpeciesPhotosModal(speciesId) {
     }
   });
 
-  // Fonction d'affichage des vignettes
   function displayPhotos(list) {
     grid.innerHTML = '';
     list.forEach((item, idx) => {
@@ -1434,7 +1500,6 @@ function openSpeciesPhotosModal(speciesId) {
     });
   }
 
-  // 2. Si un pseudo iNaturalist est renseigné, on va chercher TES observations sur l'API
   if (MY_INATURALIST_USERNAME && MY_INATURALIST_USERNAME.trim().length > 0) {
     grid.innerHTML = `<div style="color:var(--text-dim); padding:1rem;"><span class="sheet-loading-spinner"></span> Recherche de vos clichés dans votre inventaire...</div>`;
     modal.classList.add('open');
@@ -1464,7 +1529,6 @@ function openSpeciesPhotosModal(speciesId) {
         displayPhotos(myPhotosList);
       });
   } else {
-    // Mode hors-ligne / 100% tes fichiers locaux : zéro photo étrangère possible !
     displayPhotos(myPhotosList);
     modal.classList.add('open');
   }
