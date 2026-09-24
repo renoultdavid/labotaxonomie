@@ -8,11 +8,9 @@
     :root {
       --bg-deep: #05070b;
       --panel-bg: #090e17;
-      --card-bg: #101623;
       --border: rgba(255, 255, 255, 0.08);
       --accent-cyan: #38bdf8;
       --accent-emerald: #10b981;
-      --accent-amber: #f59e0b;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
@@ -36,7 +34,7 @@
     }
 
     /* ========================================================
-       1. ÉCRAN D'ACCUEIL : DOUBLE VOLET SPLIT 50/50
+       ACCUEIL : DOUBLE VOLET SPLIT 50/50 SANS AUCUN ROGNAGE
        ======================================================== */
     #homeScreen {
       position: absolute;
@@ -44,6 +42,7 @@
       display: flex;
       z-index: 10;
       transition: opacity 0.4s ease, transform 0.4s ease;
+      background: #020306;
     }
 
     #homeScreen.hidden {
@@ -60,24 +59,27 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      padding: 3.5rem;
+      align-items: center;
+      padding: 2rem;
       border-right: 1px solid var(--border);
-      transition: flex 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: flex 0.45s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s;
+      background-color: #04060a;
     }
 
     .home-pane:last-child {
       border-right: none;
     }
 
-    /* Images d'habillage Drive */
+    /* Cadre de l'image intégrale (contain = jamais tronquée) */
     .pane-bg {
       position: absolute;
-      inset: 0;
-      background-size: cover;
-      background-position: center;
-      transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
+      inset: 2rem 2rem 5.5rem 2rem;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center center;
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
       z-index: 1;
-      filter: brightness(0.85);
+      filter: drop-shadow(0 15px 35px rgba(0,0,0,0.7));
     }
 
     /* Volet 1 : Recherche d'Espèce */
@@ -90,98 +92,76 @@
       background-image: url('https://lh3.googleusercontent.com/d/1exkNvAcu4DIDDWbGWusEb9FSPuK87oo_');
     }
 
-    /* Dégradé sombre protecteur pour le texte */
-    .pane-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        180deg,
-        rgba(5, 7, 11, 0.15) 0%,
-        rgba(5, 7, 11, 0.5) 45%,
-        rgba(5, 7, 11, 0.95) 100%
-      );
-      z-index: 2;
-      transition: background 0.35s ease;
-    }
-
-    .pane-content {
+    /* Cartouche d'action épuré en bas pour ne rien masquer */
+    .pane-footer-card {
       position: relative;
       z-index: 3;
+      width: 100%;
+      max-width: 420px;
+      background: rgba(13, 18, 28, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+    }
+
+    .card-meta {
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
-      max-width: 580px;
+      gap: 0.15rem;
     }
 
-    .pane-num {
-      font-size: 0.8rem;
+    .card-badge {
+      font-size: 0.65rem;
       font-weight: 800;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--accent-cyan);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
     }
 
-    #pane2 .pane-num {
+    #pane2 .card-badge {
       color: var(--accent-emerald);
     }
 
-    .pane-num::after {
-      content: '';
-      display: inline-block;
-      width: 35px;
-      height: 1px;
-      background: currentColor;
-      opacity: 0.4;
-    }
-
-    /* Titre avec bouton pulsant aligné */
-    .title-row {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .pane-title {
-      font-size: 2.3rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
       color: #fff;
-      line-height: 1.15;
     }
 
-    /* Bouton Pulsant Discret */
+    /* Bouton Pulsant Élégant */
     .pulse-btn {
       position: relative;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
-      background: rgba(56, 189, 248, 0.2);
+      background: rgba(56, 189, 248, 0.15);
       border: 1px solid var(--accent-cyan);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      cursor: pointer;
       color: #fff;
       transition: transform 0.2s ease, background 0.2s ease;
     }
 
     #pane2 .pulse-btn {
-      background: rgba(16, 185, 129, 0.2);
+      background: rgba(16, 185, 129, 0.15);
       border-color: var(--accent-emerald);
     }
 
-    /* Onde pulsante continue */
     .pulse-btn::before {
       content: '';
       position: absolute;
       inset: -4px;
       border-radius: 50%;
       border: 2px solid var(--accent-cyan);
-      opacity: 0.8;
+      opacity: 0.75;
       animation: pulseWave 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
     }
 
@@ -195,55 +175,37 @@
         opacity: 0.8;
       }
       70% {
-        transform: scale(1.6);
+        transform: scale(1.55);
         opacity: 0;
       }
       100% {
-        transform: scale(1.6);
+        transform: scale(1.55);
         opacity: 0;
       }
     }
 
     .pulse-icon {
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       font-weight: bold;
       transform: translateX(1px);
-    }
-
-    .pane-desc {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      line-height: 1.55;
-    }
-
-    .pane-cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      margin-top: 0.75rem;
-      padding: 0.7rem 1.3rem;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--border);
-      border-radius: 30px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #fff;
-      backdrop-filter: blur(8px);
-      width: fit-content;
-      transition: all 0.25s ease;
     }
 
     /* Effets de survol / interaction */
     @media (hover: hover) {
       .home-pane:hover {
-        flex: 1.15;
+        background-color: #070a12;
       }
       .home-pane:hover .pane-bg {
-        transform: scale(1.04);
-        filter: brightness(1);
+        transform: scale(1.03);
+      }
+      .home-pane:hover .pane-footer-card {
+        border-color: var(--accent-cyan);
+        transform: translateY(-3px);
+      }
+      #pane2:hover .pane-footer-card {
+        border-color: var(--accent-emerald);
       }
       .home-pane:hover .pulse-btn {
-        transform: scale(1.1);
         background: var(--accent-cyan);
         color: #03141f;
       }
@@ -251,20 +213,10 @@
         background: var(--accent-emerald);
         color: #021a10;
       }
-      .home-pane:hover .pane-cta {
-        background: var(--accent-cyan);
-        color: #03141f;
-        border-color: var(--accent-cyan);
-      }
-      #pane2:hover .pane-cta {
-        background: var(--accent-emerald);
-        color: #021a10;
-        border-color: var(--accent-emerald);
-      }
     }
 
     /* ========================================================
-       2. MODULES PLEINE PAGE
+       MODULES PLEINE PAGE
        ======================================================== */
     .app-module {
       position: absolute;
@@ -406,35 +358,31 @@
       .home-pane {
         border-right: none;
         border-bottom: 1px solid var(--border);
-        padding: 2rem;
+        padding: 1.5rem;
       }
-      .pane-title { font-size: 1.8rem; }
+      .pane-bg {
+        inset: 1rem 1rem 4.5rem 1rem;
+      }
     }
   </style>
 </head>
 <body>
 
   <!-- ========================================================
-       ACCUEIL : DOUBLE VOLET SPLIT 50/50 AVEC VISUELS DRIVE
+       ACCUEIL : DOUBLE VOLET SANS AUCUN ROGNAGE D'IMAGE
        ======================================================== -->
   <div id="homeScreen">
     
     <!-- Volet 1 : Recherche d'Espèce -->
     <div class="home-pane" id="pane1" onclick="openModule('module1')">
       <div class="pane-bg"></div>
-      <div class="pane-overlay"></div>
-      <div class="pane-content">
-        <div class="pane-num">Module 01</div>
-        <div class="title-row">
-          <h1 class="pane-title">Recherche d'Espèce</h1>
-          <div class="pulse-btn" title="Entrer dans le module">
-            <span class="pulse-icon">→</span>
-          </div>
+      <div class="pane-footer-card">
+        <div class="card-meta">
+          <span class="card-badge">Module 01</span>
+          <span class="card-title">Recherche d'Espèce</span>
         </div>
-        <p class="pane-desc">Explorez le vivant par l'arbre taxonomique strict, la cartographie géographique 2D par zones ou la galerie visuelle intuitive.</p>
-        <div class="pane-cta">
-          <span>Ouvrir l'explorateur</span>
-          <span>→</span>
+        <div class="pulse-btn" title="Entrer">
+          <span class="pulse-icon">→</span>
         </div>
       </div>
     </div>
@@ -442,94 +390,77 @@
     <!-- Volet 2 : Observations & Statistiques -->
     <div class="home-pane" id="pane2" onclick="openModule('module2')">
       <div class="pane-bg"></div>
-      <div class="pane-overlay"></div>
-      <div class="pane-content">
-        <div class="pane-num">Module 02</div>
-        <div class="title-row">
-          <h1 class="pane-title">Observations & Statistiques</h1>
-          <div class="pulse-btn" title="Entrer dans le module">
-            <span class="pulse-icon">→</span>
-          </div>
+      <div class="pane-footer-card">
+        <div class="card-meta">
+          <span class="card-badge">Module 02</span>
+          <span class="card-title">Observations & Statistiques</span>
         </div>
-        <p class="pane-desc">Consultez l'ensemble des planches de terrain, triez vos observations et analysez la complétude et la biodiversité de votre collection.</p>
-        <div class="pane-cta">
-          <span>Accéder aux données</span>
-          <span>→</span>
+        <div class="pulse-btn" title="Entrer">
+          <span class="pulse-icon">→</span>
         </div>
       </div>
     </div>
 
   </div>
 
-  <!-- ========================================================
-       MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS)
-       ======================================================== -->
+  <!-- MODULE 1 -->
   <div class="app-module" id="module1">
     <div class="module-topbar">
       <div class="module-nav-left">
         <button class="btn-back-home" onclick="backToHome()">← Accueil</button>
         <div class="module-title">Recherche d'Espèce</div>
       </div>
-
       <div class="module-tabs">
         <button class="tab-btn active" onclick="switchModuleTab('module1', 0)">1. Recherche Expert</button>
         <button class="tab-btn" onclick="switchModuleTab('module1', 1)">2. Géographie 2D</button>
         <button class="tab-btn" onclick="switchModuleTab('module1', 2)">3. Recherche Visuelle</button>
       </div>
     </div>
-
     <div class="module-view-stack">
       <div class="module-view active" id="view1-0">
         <div class="view-placeholder">
           <h3>Onglet 1 : Recherche Expert Cladistique</h3>
-          <p>Arbre taxonomique strict sans artifice, affichant les binômes latins avec noms vernaculaires et compteurs d'espèces.</p>
+          <p>Arbre taxonomique strict affichant les binômes latins, noms vernaculaires et compteurs d'espèces.</p>
         </div>
       </div>
-
       <div class="module-view" id="view1-1">
         <div class="view-placeholder">
           <h3>Onglet 2 : Recherche Géographique 2D</h3>
-          <p>Carte interactive avec clusters colorés d'un côté et vignettes des espèces observées de l'autre.</p>
+          <p>Carte interactive avec clusters d'un côté et vignettes d'espèces de l'autre.</p>
         </div>
       </div>
-
       <div class="module-view" id="view1-2">
         <div class="view-placeholder">
           <h3>Onglet 3 : Recherche par Images</h3>
-          <p>Navigation simplifiée par grands groupes illustrés sans jargon technique.</p>
+          <p>Exploration visuelle par grands groupes illustrés sans termes complexes.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ========================================================
-       MODULE 2 : OBSERVATIONS & STATISTIQUES (2 ONGLETS)
-       ======================================================== -->
+  <!-- MODULE 2 -->
   <div class="app-module" id="module2">
     <div class="module-topbar">
       <div class="module-nav-left">
         <button class="btn-back-home" onclick="backToHome()">← Accueil</button>
         <div class="module-title">Observations & Statistiques</div>
       </div>
-
       <div class="module-tabs">
         <button class="tab-btn active" onclick="switchModuleTab('module2', 0)">Observations</button>
         <button class="tab-btn" onclick="switchModuleTab('module2', 1)">Statistiques & Ratios</button>
       </div>
     </div>
-
     <div class="module-view-stack">
       <div class="module-view active" id="view2-0">
         <div class="view-placeholder">
           <h3>Onglet 1 : Mosaïque des Observations</h3>
-          <p>Toutes les observations de terrain avec options de tri chronologique et alphabétique.</p>
+          <p>Ensemble des observations de terrain avec tri chronologique et alphabétique.</p>
         </div>
       </div>
-
       <div class="module-view" id="view2-1">
         <div class="view-placeholder">
           <h3>Onglet 2 : Statistiques & Analyses</h3>
-          <p>Tableau de bord d'analyse, représentativité des taxons et couverture des stations.</p>
+          <p>Tableau de bord d'analyse de biodiversité et ratios de taxonomie.</p>
         </div>
       </div>
     </div>
@@ -560,16 +491,10 @@
 
     function switchModuleTab(moduleId, tabIndex) {
       const module = document.getElementById(moduleId);
-      
       const tabs = module.querySelectorAll('.tab-btn');
-      tabs.forEach((tab, idx) => {
-        tab.classList.toggle('active', idx === tabIndex);
-      });
-
+      tabs.forEach((tab, idx) => tab.classList.toggle('active', idx === tabIndex));
       const views = module.querySelectorAll('.module-view');
-      views.forEach((view, idx) => {
-        view.classList.toggle('active', idx === tabIndex);
-      });
+      views.forEach((view, idx) => view.classList.toggle('active', idx === tabIndex));
     }
   </script>
 </body>
