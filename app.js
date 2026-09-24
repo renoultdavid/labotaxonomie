@@ -8,8 +8,8 @@ let currentOpenSpecies = null;
 let sheetWorldMap = null;
 let sheetWorldTileLayer = null;
 
-// IDENTIFIANT INATURALIST POUR VERROUILLER STRICTEMENT SUR VOS CLICHÉS
-const MY_INATURALIST_USERNAME = 'zanskar'; 
+// IDENTIFIANT NUMÉRIQUE OFFICIEL INATURALIST (évite l'erreur 422 HTTP)
+const MY_INATURALIST_USER_ID = 173306; 
 
 const vernMap = {
   'Animalia': 'Animaux',
@@ -73,7 +73,7 @@ function normalizeStr(str) {
 }
 
 function isSpeciesTerminal(sp) {
-   if (sp && typeof sp.is_terminal_leaf !== 'undefined') {
+  if (sp && typeof sp.is_terminal_leaf !== 'undefined') {
     return sp.is_terminal_leaf === true;
   }
   if (!sp || !sp.scientific_name) return false;
@@ -1243,7 +1243,7 @@ function initOrUpdateWorldMap(sp) {
 }
 
 // ========================================================
-// 7. TÉLÉPORTATION CORRIGÉE (ROBUSTE MODULE 1 & MODULE 2)
+// 7. TÉLÉPORTATION CARTE 2D
 // ========================================================
 function locateSpeciesOnMap(sp) {
   if (!sp || !sp.coordinates || !sp.coordinates.lat || !sp.coordinates.lng) {
@@ -1251,12 +1251,10 @@ function locateSpeciesOnMap(sp) {
     return;
   }
 
-  // 1. Fermer toutes les fiches modales
   document.getElementById('speciesSheetOverlay').classList.remove('active');
   const taxonOverlay = document.getElementById('taxonSheetOverlay');
   if (taxonOverlay) taxonOverlay.classList.remove('active');
 
-  // 2. S'assurer que le DOM du Module 1 est actif et que l'onglet Géographie 2D (index 1) est affiché
   const homeScreen = document.getElementById('homeScreen');
   if (homeScreen) homeScreen.classList.add('hidden');
   
@@ -1269,7 +1267,6 @@ function locateSpeciesOnMap(sp) {
   const views = module1.querySelectorAll('.module-view');
   views.forEach((view, idx) => view.classList.toggle('active', idx === 1));
 
-  // 3. Initialiser la carte et centrer avec un délai pour garantir le rendu du DOM
   setTimeout(() => {
     initGeoMapWorkspace();
     geoMap.invalidateSize();
@@ -1300,7 +1297,9 @@ function locateSpeciesOnMap(sp) {
   }, 100);
 }
 
-// 8. MONOGRAPHIE STRUCTUREE SANS TEXTE CREUX
+// ========================================================
+// 8. MONOGRAPHIE STRUCTUREE
+// ========================================================
 function fetchStructuredNaturalistMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
   contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire naturaliste...`;
@@ -1575,7 +1574,7 @@ function populateRelatedSpecies(sp) {
 }
 
 // ========================================================
-// 9. SUPER-FICHE DE RANG SUPÉRIEUR (NAVIGATION CROISÉE RÉSOLUE)
+// 9. SUPER-FICHE DE RANG SUPÉRIEUR
 // ========================================================
 window.openTaxonSheet = function(rankKey, rankName) {
   if (!globalSpeciesData || !rankName) return;
@@ -1654,7 +1653,7 @@ window.closeTaxonSheet = function() {
 };
 
 // ========================================================
-// 10. CLICHÉS PERSONNELS VERROUILLÉS SUR LE COMPTE INATURALIST "ZANSKAR"
+// 10. CLICHÉS PERSONNELS VIA INATURALIST API (CORRIGÉ & SÉCURISÉ)
 // ========================================================
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
@@ -1709,9 +1708,14 @@ function openSpeciesPhotosModal(speciesId) {
   }
 
   if (sp.id && !isNaN(sp.id)) {
-    const userFilter = MY_INATURALIST_USERNAME ? `&user_id=${encodeURIComponent(MY_INATURALIST_USERNAME)}` : '';
-    fetch(`https://api.inaturalist.org/v1/observations?taxon_id=${sp.id}${userFilter}&per_page=30&photos=true`)
-      .then(res => res.json())
+    // Appel verrouillé sur l'ID numérique officiel 173306 (zanskar)
+    const url = `https://api.inaturalist.org/v1/observations?taxon_id=${sp.id}&user_id=${MY_INATURALIST_USER_ID}&per_page=30&photos=true`;
+
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error('Erreur HTTP ' + res.status);
+        return res.json();
+      })
       .then(data => {
         if (data && data.results && data.results.length > 0) {
           data.results.forEach(obs => {
