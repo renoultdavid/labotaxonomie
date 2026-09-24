@@ -97,6 +97,7 @@ function getTotalObservationsCount(list) {
 function createOriginalGalleryCard(sp, metaText, countBadge, customClickAction) {
   const card = document.createElement('div');
   card.className = 'gallery-card';
+  card.dataset.speciesId = String(sp.id);
   card.onclick = () => {
     if (typeof customClickAction === 'function') {
       customClickAction(sp);
@@ -434,7 +435,7 @@ function initGeoMapWorkspace() {
       maxClusterRadius: 45
     });
     geoMap.addLayer(clusterGroup);
-    geoMap.on('moveend', syncGeoRightPane);
+    geoMap.on('moveend', () => syncGeoRightPane());
 
     document.querySelectorAll('.geo-filter-pill').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -526,13 +527,19 @@ function populateGeoMarkers() {
   syncGeoRightPane();
 }
 
-function syncGeoRightPane() {
+function syncGeoRightPane(prioritySpecies = null) {
   if (!geoMap || !globalSpeciesData) return;
   const bounds = geoMap.getBounds();
   const searchTokens = geoSearchFilterText.split(/\s+/).filter(Boolean);
 
-  const visibleSpecies = [];
+  let visibleSpecies = [];
   const seenIds = new Set();
+
+  // Si une espèce est prioritaire (suite à "Localiser"), on la place en tout début
+  if (prioritySpecies) {
+    seenIds.add(prioritySpecies.id);
+    visibleSpecies.push(prioritySpecies);
+  }
 
   globalSpeciesData.forEach(sp => {
     if (!sp.coordinates || !sp.coordinates.lat || !sp.coordinates.lng) return;
@@ -568,10 +575,17 @@ function syncGeoRightPane() {
 
   const slice = visibleSpecies.slice(0, 80);
   slice.forEach(sp => {
-    galleryDiv.appendChild(createOriginalGalleryCard(sp, sp.place ? sp.place.split(',')[0] : ''));
+    const isPriority = prioritySpecies && String(sp.id) === String(prioritySpecies.id);
+    const card = createOriginalGalleryCard(sp, sp.place ? sp.place.split(',')[0] : '');
+    if (isPriority) {
+      card.style.borderColor = 'var(--accent-cyan)';
+      card.style.boxShadow = '0 0 16px rgba(56, 189, 248, 0.6)';
+    }
+    galleryDiv.appendChild(card);
   });
 
   container.appendChild(galleryDiv);
+  container.scrollTop = 0;
 }
 
 // 3. RECHERCHE VISUELLE
@@ -1137,7 +1151,6 @@ function openSpeciesSheet(sp) {
   document.getElementById('sheetHeroVern').innerText = sp.common_name || sp.taxonomy.genus || 'Taxon validé';
   document.getElementById('sheetHeroRank').innerText = isSpeciesTerminal(sp) ? 'Espèce' : 'Taxon supérieur';
 
-  // Badge UICN + Bouton Repère Carte 2D
   const badgesRow = document.querySelector('.sheet-header-identity .sheet-badges-row');
   const existingLocateBtn = document.getElementById('headerLocateBtn');
   if (existingLocateBtn) existingLocateBtn.remove();
@@ -1222,7 +1235,9 @@ function initOrUpdateWorldMap(sp) {
   }
 }
 
-// 7. TÉLÉPORTATION VERS LA CARTE 2D & CENTRAGE PRÉCIS
+// ========================================================
+// 7. TÉLÉPORTATION CARTOGRAPHIQUE AVEC DÉCLUSTERING FORCÉ
+// ========================================================
 function locateSpeciesOnMap(sp) {
   if (!sp || !sp.coordinates || !sp.coordinates.lat || !sp.coordinates.lng) {
     alert("Aucune coordonnée GPS enregistrée pour cette observation.");
@@ -1241,17 +1256,30 @@ function locateSpeciesOnMap(sp) {
     const lat = sp.coordinates.lat;
     const lng = sp.coordinates.lng;
 
-    geoMap.setView([lat, lng], 14, { animate: true });
+    // 1. Zoom maximal (18) pour défaire les clusters
+    geoMap.setView([lat, lng], 18, { animate: true });
 
+    // 2. Recherche du marker Leaflet correspondant
     if (clusterGroup) {
+      let targetMarker = null;
       clusterGroup.eachLayer(layer => {
         if (layer.speciesData && String(layer.speciesData.id) === String(sp.id)) {
-          clusterGroup.zoomToShowLayer(layer, () => {
-            layer.openPopup();
-          });
+          targetMarker = layer;
         }
       });
+
+      if (targetMarker) {
+        // Force l'éclatement en éventail si plusieurs points partagent le même emplacement exact
+        clusterGroup.zoomToShowLayer(targetMarker, () => {
+          setTimeout(() => {
+            targetMarker.openPopup();
+          }, 150);
+        });
+      }
     }
+
+    // 3. Mise en avant directe dans la colonne de droite (première position avec halo)
+    syncGeoRightPane(sp);
   }, 250);
 }
 
@@ -1530,7 +1558,7 @@ function populateRelatedSpecies(sp) {
 }
 
 // ========================================================
-// 9. SUPER-FICHE DE RANG SUPÉRIEUR (FAMILLE / ORDRE / GENRE)
+// 9. SUPER-FICHE DE RANG SUPÉRIEUR (NAVIGATION CROISÉE RÉSOLUE)
 // ========================================================
 window.openTaxonSheet = function(rankKey, rankName) {
   if (!globalSpeciesData || !rankName) return;
@@ -1584,14 +1612,13 @@ window.openTaxonSheet = function(rankKey, rankName) {
     }
   });
 
-  // Titre propre et élégant pour la grille
   const genderPrefix = (currentRankLabel === 'Famille' || currentRankLabel === 'Classe') ? 'cette' : 'cet';
   document.getElementById('taxonSpeciesGridTitle').innerText = `Toutes vos espèces de ${genderPrefix} ${currentRankLabel.toLowerCase()} (${matchingSpecies.length})`;
   
   const grid = document.getElementById('taxonSpeciesGrid');
   grid.innerHTML = '';
 
-  // ACTION CRUCIALE : Le clic sur une vignette ferme la fiche du rang supérieur et ouvre la fiche espèce correspondante
+  // ACTION RÉSOLUE : bascule immédiate vers la fiche de la nouvelle espèce
   matchingSpecies.forEach(sp => {
     const card = createOriginalGalleryCard(sp, '', null, (selectedSpecies) => {
       closeTaxonSheet();
