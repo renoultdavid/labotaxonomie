@@ -1,11 +1,11 @@
 // ========================================================
-// OBSERVATOIRE DU VIVANT • APPLICATION LOGIC
+// OBSERVATOIRE DU VIVANT • ARCHITECTURE MAÎTRESSE
 // ========================================================
 let globalSpeciesData = null;
 let currentResultsList = [];
 let resultsViewMode = 'gallery';
 
-// Dictionnaire de traduction vernaculaire
+// Dictionnaire vernaculaire
 const vernMap = {
   'Animalia': 'Animaux',
   'Plantae': 'Végétaux / Plantes',
@@ -56,12 +56,18 @@ const vernMap = {
   'Orchidaceae': 'Orchidées'
 };
 
-// Nettoyage de chaîne pour la recherche
 function normalizeStr(str) {
   return (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-// Chargement initial
+// Filtre pour garantir une vraie espèce binomiale
+function isTrueSpecies(sp) {
+  if (!sp || !sp.scientific_name) return false;
+  const parts = sp.scientific_name.trim().split(/\s+/);
+  return parts.length >= 2 && !['Animalia', 'Plantae', 'Fungi', 'Arthropoda', 'Chordata', 'Insecta'].includes(parts[0]);
+}
+
+// Chargement des données
 fetch('data.json')
   .then(res => res.json())
   .then(data => {
@@ -69,13 +75,11 @@ fetch('data.json')
     document.getElementById('treeTotalCount').innerText = `${data.length.toLocaleString('fr-FR')} espèces`;
     initDeepExpertTree();
   })
-  .catch(err => console.warn('Erreur data.json...', err));
+  .catch(err => console.warn('Erreur chargement data.json...', err));
 
-// Navigation plein écran
 function openModule(moduleId) {
   document.getElementById('homeScreen').classList.add('hidden');
   document.getElementById(moduleId).classList.add('active');
-  
   if (moduleId === 'module2') {
     initObservationsWorkspace();
   }
@@ -105,7 +109,7 @@ function switchModuleTab(moduleId, tabIndex) {
 }
 
 // ========================================================
-// 1. MODULE 1 - ONGLET 1 : ARBRE EXPERT
+// 1. MODULE 1 : EXPERT, GÉO & VISUEL (INCHANGÉS)
 // ========================================================
 function initDeepExpertTree() {
   if (!globalSpeciesData) return;
@@ -305,9 +309,7 @@ document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
   renderResultsDOM();
 });
 
-// ========================================================
-// 2. MODULE 1 - ONGLET 2 : GÉOGRAPHIE 2D (CLUSTERS)
-// ========================================================
+// GÉOGRAPHIE 2D
 let geoMap = null;
 let clusterGroup = null;
 let activeGeoGroups = new Set(['all', 'Aves', 'Lepidoptera', 'Coleoptera', 'Araneae', 'Reptilia', 'Amphibia', 'Mammalia', 'Fish', 'Plantae', 'Fungi', 'Other']);
@@ -496,9 +498,7 @@ function syncGeoRightPane() {
   container.appendChild(fragment);
 }
 
-// ========================================================
-// 3. MODULE 1 - ONGLET 3 : RECHERCHE VISUELLE
-// ========================================================
+// RECHERCHE VISUELLE
 const visualTree = [
   {
     id: 'birds',
@@ -733,18 +733,26 @@ function visualNavigateToSpecies(macroId, subId) {
 }
 
 // ========================================================
-// 4. MODULE 2 - ONGLET 1 : OBSERVATIONS (TRIS AVANCÉS)
+// 2. MODULE 2 - ONGLET 1 : OBSERVATIONS (RÉGULIER & PROPRE)
 // ========================================================
 let obsFilteredData = [];
+let obsCurrentPage = 1;
+let obsPageSize = 100;
 
 function initObservationsWorkspace() {
   if (!globalSpeciesData) return;
 
   const searchInput = document.getElementById('obsSearchInput');
   const sortSelect = document.getElementById('obsSortSelect');
+  const pageSizeSelect = document.getElementById('obsPageSizeSelect');
 
-  searchInput.oninput = applyObsFilteringAndSorting;
-  sortSelect.onchange = applyObsFilteringAndSorting;
+  searchInput.oninput = () => { obsCurrentPage = 1; applyObsFilteringAndSorting(); };
+  sortSelect.onchange = () => { obsCurrentPage = 1; applyObsFilteringAndSorting(); };
+  pageSizeSelect.onchange = (e) => {
+    obsPageSize = parseInt(e.target.value, 10);
+    obsCurrentPage = 1;
+    applyObsFilteringAndSorting();
+  };
 
   applyObsFilteringAndSorting();
 }
@@ -755,43 +763,69 @@ function applyObsFilteringAndSorting() {
   const sortMode = document.getElementById('obsSortSelect').value;
 
   // Filtrage
-  if (!q) {
-    obsFilteredData = [...globalSpeciesData];
-  } else {
-    obsFilteredData = globalSpeciesData.filter(sp => {
+  let baseList = globalSpeciesData;
+  if (q) {
+    baseList = baseList.filter(sp => {
       const fullText = normalizeStr(`${sp.scientific_name} ${sp.common_name || ''} ${sp.place || ''} ${sp.taxonomy.family || ''} ${sp.taxonomy.order || ''}`);
       return fullText.includes(q);
     });
   }
 
-  // Tris
+  // Si on cherche par fréquence ou rareté, exclure impérativement les rangs supérieurs (Animalia, Plantae...)
+  if (sortMode === 'freq-desc' || sortMode === 'freq-asc') {
+    baseList = baseList.filter(isTrueSpecies);
+  }
+
+  obsFilteredData = [...baseList];
+
+  // Tri rigoureux
   obsFilteredData.sort((a, b) => {
     if (sortMode === 'date-desc') return (b.last_observed || '').localeCompare(a.last_observed || '');
     if (sortMode === 'date-asc') return (a.last_observed || '').localeCompare(b.last_observed || '');
     if (sortMode === 'sci-asc') return a.scientific_name.localeCompare(b.scientific_name);
     if (sortMode === 'sci-desc') return b.scientific_name.localeCompare(a.scientific_name);
     if (sortMode === 'vern-asc') return (a.common_name || 'zzz').localeCompare(b.common_name || 'zzz');
-    if (sortMode === 'count-desc') return (b.obs_count || 1) - (a.obs_count || 1);
-    if (sortMode === 'count-asc') return (a.obs_count || 1) - (b.obs_count || 1);
+    if (sortMode === 'freq-desc') return (b.obs_count || 1) - (a.obs_count || 1);
+    if (sortMode === 'freq-asc') return (a.obs_count || 1) - (b.obs_count || 1);
     return 0;
   });
 
-  document.getElementById('obsCountBadge').innerText = `${obsFilteredData.length.toLocaleString('fr-FR')} observation(s)`;
+  updateObsPagination();
   renderObsCards();
+}
+
+function updateObsPagination() {
+  const totalItems = obsFilteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / obsPageSize));
+
+  if (obsCurrentPage > totalPages) obsCurrentPage = totalPages;
+
+  document.getElementById('obsCountBadge').innerText = `${totalItems.toLocaleString('fr-FR')} observation(s)`;
+  document.getElementById('obsPageIndicator').innerText = `Page ${obsCurrentPage} / ${totalPages}`;
+  document.getElementById('btnPagePrev').disabled = (obsCurrentPage <= 1);
+  document.getElementById('btnPageNext').disabled = (obsCurrentPage >= totalPages);
+}
+
+function changeObsPage(delta) {
+  obsCurrentPage += delta;
+  updateObsPagination();
+  renderObsCards();
+  document.getElementById('obsCardsGrid').scrollTop = 0;
 }
 
 function renderObsCards() {
   const container = document.getElementById('obsCardsGrid');
   container.innerHTML = '';
 
-  const slice = obsFilteredData.slice(0, 100);
+  const start = (obsCurrentPage - 1) * obsPageSize;
+  const slice = obsFilteredData.slice(start, start + obsPageSize);
   const fragment = document.createDocumentFragment();
 
   slice.forEach(sp => {
     const card = document.createElement('div');
     card.className = 'obs-card';
     card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
-    const thumb = sp.photo_url || 'https://via.placeholder.com/220x220/080c14/475569?text=?';
+    const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
 
     card.innerHTML = `
       <img class="obs-card-img" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
@@ -799,203 +833,223 @@ function renderObsCards() {
       <div class="obs-card-content">
         <div class="obs-sci">${sp.scientific_name}</div>
         <div class="obs-vern">${sp.common_name || sp.taxonomy.family || 'Taxon validé'}</div>
-        <div class="obs-meta">${sp.place || 'Lieu non renseigné'} • ${sp.last_observed || 'Non daté'}</div>
+        <div class="obs-meta">${sp.place ? sp.place.split(',')[0] : 'Station'} • ${sp.last_observed || 'Non daté'}</div>
       </div>
     `;
     fragment.appendChild(card);
   });
 
   container.appendChild(fragment);
-  container.scrollTop = 0;
 }
 
 // ========================================================
-// 5. MODULE 2 - ONGLET 2 : STATISTIQUES & ANALYSES
+// 3. MODULE 2 - ONGLET 2 : STATISTIQUES AVANCÉES
 // ========================================================
 function initStatsDashboard() {
   if (!globalSpeciesData) return;
   const container = document.getElementById('statsDashboardArea');
   container.innerHTML = '';
 
-  const totalSpecies = globalSpeciesData.length;
+  const trueSpeciesList = globalSpeciesData.filter(isTrueSpecies);
+  const totalTrueSpecies = trueSpeciesList.length;
   const totalObs = globalSpeciesData.reduce((acc, s) => acc + (s.obs_count || 1), 0);
-  const driveCount = globalSpeciesData.filter(s => s.drive_folder_id).length;
-  const drivePct = Math.round((driveCount / totalSpecies) * 100);
 
-  // 1. KPI Banner
+  // 1. Calcul de la Phénologie (12 mois)
+  const monthCounts = new Array(12).fill(0);
+  globalSpeciesData.forEach(s => {
+    if (s.last_observed) {
+      // Format attendu YYYY-MM-DD
+      const parts = s.last_observed.split('-');
+      if (parts.length >= 2) {
+        const m = parseInt(parts[1], 10) - 1;
+        if (m >= 0 && m < 12) monthCounts[m] += (s.obs_count || 1);
+      }
+    }
+  });
+  const maxMonth = Math.max(...monthCounts, 1);
+  const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+  // 2. Calcul du Donut de Rareté
+  const rareCount = trueSpeciesList.filter(s => (s.obs_count || 1) === 1).length;
+  const moderateCount = trueSpeciesList.filter(s => (s.obs_count || 1) >= 2 && (s.obs_count || 1) <= 4).length;
+  const frequentCount = trueSpeciesList.filter(s => (s.obs_count || 1) >= 5).length;
+
+  const pctRare = ((rareCount / totalTrueSpecies) * 100).toFixed(0);
+  const pctMod = ((moderateCount / totalTrueSpecies) * 100).toFixed(0);
+  const pctFreq = (100 - pctRare - pctMod);
+
+  // Donut SVG circumference = 2 * PI * r (r=45 -> circ=282.7)
+  const circ = 282.7;
+  const strokeRare = (pctRare / 100) * circ;
+  const strokeMod = (pctMod / 100) * circ;
+  const strokeFreq = (pctFreq / 100) * circ;
+
+  // 3. Top 5 Espèces Stars
+  const topSpeciesStars = [...trueSpeciesList]
+    .sort((a,b) => (b.obs_count || 1) - (a.obs_count || 1))
+    .slice(0, 5);
+
+  // Bannière KPI
   const kpiBanner = document.createElement('div');
   kpiBanner.className = 'stat-kpi-banner';
   kpiBanner.innerHTML = `
     <div class="stat-kpi-card">
-      <div class="stat-kpi-label">Espèces validées</div>
-      <div class="stat-kpi-val">${totalSpecies.toLocaleString('fr-FR')}</div>
+      <div class="stat-kpi-label">Espèces binominales</div>
+      <div class="stat-kpi-val">${totalTrueSpecies.toLocaleString('fr-FR')}</div>
     </div>
     <div class="stat-kpi-card">
-      <div class="stat-kpi-label">Total des observations</div>
+      <div class="stat-kpi-label">Observations cumulées</div>
       <div class="stat-kpi-val" style="color: var(--accent-cyan);">${totalObs.toLocaleString('fr-FR')}</div>
     </div>
     <div class="stat-kpi-card">
-      <div class="stat-kpi-label">Complétude Google Drive</div>
-      <div class="stat-kpi-val" style="color: var(--accent-emerald);">${drivePct} %</div>
+      <div class="stat-kpi-label">Indice de rareté</div>
+      <div class="stat-kpi-val" style="color: var(--accent-amber);">${pctRare} %</div>
     </div>
     <div class="stat-kpi-card">
-      <div class="stat-kpi-label">Moyenne par espèce</div>
-      <div class="stat-kpi-val" style="color: var(--accent-amber);">${(totalObs / totalSpecies).toFixed(1)} obs</div>
+      <div class="stat-kpi-label">Moyenne d'obs / taxon</div>
+      <div class="stat-kpi-val" style="color: var(--accent-emerald);">${(totalObs / totalTrueSpecies).toFixed(1)}</div>
     </div>
   `;
   container.appendChild(kpiBanner);
 
-  // 2. Grille 2x2 des 4 quadrants
-  const grid2x2 = document.createElement('div');
-  grid2x2.className = 'stats-grid-2x2';
+  // Grille 2x2 des quadrants analytiques
+  const grid = document.createElement('div');
+  grid.className = 'stats-grid-2x2';
 
-  // Quadrant 1 : Les Grands Règnes
-  const kingdomBox = document.createElement('div');
-  kingdomBox.className = 'stat-box';
-  const kingdoms = {};
-  globalSpeciesData.forEach(s => {
-    const k = s.taxonomy.kingdom || 'Autres';
-    kingdoms[k] = (kingdoms[k] || 0) + 1;
-  });
-
-  kingdomBox.innerHTML = `
-    <div class="stat-box-header">
-      <div class="stat-box-title">⚖️ Ratios des Grands Règnes</div>
-      <span style="font-size:0.75rem; color:var(--text-dim);">Cliquez pour lister</span>
-    </div>
-    <div class="stat-bars-list" id="kingdomBarsList"></div>
-  `;
-  grid2x2.appendChild(kingdomBox);
-
-  // Quadrant 2 : Top 8 des Ordres
-  const orderBox = document.createElement('div');
-  orderBox.className = 'stat-box';
-  const orders = {};
-  globalSpeciesData.forEach(s => {
-    const o = s.taxonomy.order || 'Ordre indéterminé';
-    orders[o] = (orders[o] || 0) + 1;
-  });
-  const topOrders = Object.entries(orders).sort((a,b) => b[1] - a[1]).slice(0, 8);
-
-  orderBox.innerHTML = `
-    <div class="stat-box-header">
-      <div class="stat-box-title">🏆 Top des Ordres les plus riches</div>
-      <span style="font-size:0.75rem; color:var(--text-dim);">Par nombre d'espèces</span>
-    </div>
-    <div class="stat-bars-list" id="orderBarsList"></div>
-  `;
-  grid2x2.appendChild(orderBox);
-
-  // Quadrant 3 : Top 8 des Familles
-  const familyBox = document.createElement('div');
-  familyBox.className = 'stat-box';
-  const families = {};
-  globalSpeciesData.forEach(s => {
-    const f = s.taxonomy.family || 'Famille indéterminée';
-    families[f] = (families[f] || 0) + 1;
-  });
-  const topFamilies = Object.entries(families).sort((a,b) => b[1] - a[1]).slice(0, 8);
-
-  familyBox.innerHTML = `
-    <div class="stat-box-header">
-      <div class="stat-box-title">🌿 Familles reines de la collection</div>
-      <span style="font-size:0.75rem; color:var(--text-dim);">Par diversité spécifique</span>
-    </div>
-    <div class="stat-bars-list" id="familyBarsList"></div>
-  `;
-  grid2x2.appendChild(familyBox);
-
-  // Quadrant 4 : Top des Stations de prospection (Lieux-dits)
-  const placeBox = document.createElement('div');
-  placeBox.className = 'stat-box';
-  const places = {};
-  globalSpeciesData.forEach(s => {
-    if (s.place) {
-      // Découpage simple pour garder le lieu principal
-      const p = s.place.split(',')[0].trim();
-      places[p] = (places[p] || 0) + 1;
-    }
-  });
-  const topPlaces = Object.entries(places).sort((a,b) => b[1] - a[1]).slice(0, 8);
-
-  placeBox.innerHTML = `
-    <div class="stat-box-header">
-      <div class="stat-box-title">📍 Hauts-lieux de prospection (Stations)</div>
-      <span style="font-size:0.75rem; color:var(--text-dim);">Points chauds</span>
-    </div>
-    <div class="stat-bars-list" id="placeBarsList"></div>
-  `;
-  grid2x2.appendChild(placeBox);
-
-  container.appendChild(grid2x2);
-
-  // Remplissage animé des barres
-  renderBars('kingdomBarsList', Object.entries(kingdoms), totalSpecies, '#38bdf8', 'kingdom');
-  renderBars('orderBarsList', topOrders, totalSpecies, '#ec4899', 'order');
-  renderBars('familyBarsList', topFamilies, totalSpecies, '#10b981', 'family');
-  renderBars('placeBarsList', topPlaces, totalSpecies, '#f59e0b', 'place');
-}
-
-function renderBars(elementId, dataArray, totalRef, colorHex, filterType) {
-  const container = document.getElementById(elementId);
-  if (!container) return;
-
-  dataArray.forEach(([key, count]) => {
-    const pct = ((count / totalRef) * 100).toFixed(1);
-    const item = document.createElement('div');
-    item.className = 'stat-bar-item';
-    item.onclick = () => openStatsModal(filterType, key, count);
-
-    item.innerHTML = `
-      <div class="stat-bar-labels">
-        <span class="stat-bar-name">${vernMap[key] ? vernMap[key] + ' (' + key + ')' : key}</span>
-        <span class="stat-bar-count">${count.toLocaleString('fr-FR')} <span style="font-size:0.7rem; color:var(--text-dim); font-weight:normal;">(${pct}%)</span></span>
-      </div>
-      <div class="stat-bar-track">
-        <div class="stat-bar-fill" style="width: ${Math.min(100, Math.max(3, pct * 2.5))}%; background: ${colorHex};"></div>
+  // CADRAN 1 : Phénologie mensuelle
+  const phenoBox = document.createElement('div');
+  phenoBox.className = 'stat-box';
+  let phenoBarsHtml = '';
+  monthNames.forEach((name, idx) => {
+    const count = monthCounts[idx];
+    const heightPct = Math.round((count / maxMonth) * 100);
+    phenoBarsHtml += `
+      <div class="pheno-col" title="${name} : ${count} relevés">
+        <div class="pheno-bar-track">
+          <div class="pheno-bar-fill" style="height: ${Math.max(4, heightPct)}%;"></div>
+        </div>
+        <span class="pheno-month-label">${name}</span>
       </div>
     `;
-    container.appendChild(item);
   });
-}
 
-// Pop-up modale d'affichage des espèces d'une statistique
-function openStatsModal(type, value, count) {
-  const modal = document.getElementById('statsModal');
-  const title = document.getElementById('statsModalTitle');
-  const body = document.getElementById('statsModalBody');
+  phenoBox.innerHTML = `
+    <div class="stat-box-header">
+      <div class="stat-box-title">📅 Phénologie & Activité Saisonnière</div>
+      <span style="font-size:0.75rem; color:var(--text-dim);">Relevés cumulés par mois</span>
+    </div>
+    <div class="pheno-grid">${phenoBarsHtml}</div>
+  `;
+  grid.appendChild(phenoBox);
 
-  title.innerText = `${value} (${count.toLocaleString('fr-FR')} espèces)`;
-  body.innerHTML = '';
-
-  let matches = [];
-  if (type === 'kingdom') matches = globalSpeciesData.filter(s => s.taxonomy.kingdom === value);
-  else if (type === 'order') matches = globalSpeciesData.filter(s => s.taxonomy.order === value);
-  else if (type === 'family') matches = globalSpeciesData.filter(s => s.taxonomy.family === value);
-  else if (type === 'place') matches = globalSpeciesData.filter(s => (s.place || '').includes(value));
-
-  const fragment = document.createDocumentFragment();
-  matches.slice(0, 100).forEach(sp => {
-    const row = document.createElement('div');
-    row.className = 'species-row';
-    row.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
-    const thumb = sp.photo_url || 'https://via.placeholder.com/80x80/080c14/475569?text=?';
-
-    row.innerHTML = `
-      <div class="species-left">
-        <img class="species-mini-thumb" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-        <div class="species-text">
-          <span class="species-latin">${sp.scientific_name}</span>
-          <span class="species-vernacular">${sp.common_name || sp.taxonomy.family || ''}</span>
+  // CADRAN 2 : Donut de Rareté & Singulatrité
+  const rarityBox = document.createElement('div');
+  rarityBox.className = 'stat-box';
+  rarityBox.innerHTML = `
+    <div class="stat-box-header">
+      <div class="stat-box-title">🎯 Profil de Rareté des Espèces</div>
+      <span style="font-size:0.75rem; color:var(--text-dim);">Distribution des contacts</span>
+    </div>
+    <div class="donut-wrap">
+      <svg class="donut-svg" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="45" fill="none" stroke="#060910" stroke-width="22" />
+        <circle class="donut-circle" cx="60" cy="60" r="45" stroke="#f59e0b" stroke-dasharray="${strokeRare} ${circ}" stroke-dashoffset="0" />
+        <circle class="donut-circle" cx="60" cy="60" r="45" stroke="#38bdf8" stroke-dasharray="${strokeMod} ${circ}" stroke-dashoffset="-${strokeRare}" />
+        <circle class="donut-circle" cx="60" cy="60" r="45" stroke="#10b981" stroke-dasharray="${strokeFreq} ${circ}" stroke-dashoffset="-${strokeRare + strokeMod}" />
+      </svg>
+      <div class="donut-legend">
+        <div class="donut-legend-item">
+          <span class="donut-dot" style="background:#f59e0b;"></span>
+          <div>
+            <strong>${rareCount.toLocaleString('fr-FR')}</strong> espèces vues 1 fois
+            <div style="font-size:0.7rem; color:var(--text-dim);">${pctRare}% de raretés absolues</div>
+          </div>
+        </div>
+        <div class="donut-legend-item">
+          <span class="donut-dot" style="background:#38bdf8;"></span>
+          <div>
+            <strong>${moderateCount.toLocaleString('fr-FR')}</strong> espèces régulières (2 à 4)
+            <div style="font-size:0.7rem; color:var(--text-dim);">${pctMod}% de présence stable</div>
+          </div>
+        </div>
+        <div class="donut-legend-item">
+          <span class="donut-dot" style="background:#10b981;"></span>
+          <div>
+            <strong>${frequentCount.toLocaleString('fr-FR')}</strong> espèces reines (5+)
+            <div style="font-size:0.7rem; color:var(--text-dim);">${pctFreq}% de piliers</div>
+          </div>
         </div>
       </div>
-      <button class="btn-open-fiche">Fiche</button>
+    </div>
+  `;
+  grid.appendChild(rarityBox);
+
+  // CADRAN 3 : Podium des 5 Espèces Stars
+  const podiumBox = document.createElement('div');
+  podiumBox.className = 'stat-box';
+  let podiumHtml = '';
+  topSpeciesStars.forEach((sp, i) => {
+    const thumb = sp.photo_url || 'https://via.placeholder.com/80x80/080c14/475569?text=?';
+    podiumHtml += `
+      <div class="podium-item" onclick="alert('Super-Fiche : ${sp.scientific_name}')">
+        <div class="podium-left">
+          <span class="podium-rank">#${i + 1}</span>
+          <img class="podium-avatar" src="${thumb}" alt="" />
+          <div>
+            <div style="font-style:italic; font-weight:700; font-size:0.85rem; color:#fff;">${sp.scientific_name}</div>
+            <div style="font-size:0.725rem; color:var(--accent-emerald);">${sp.common_name || sp.taxonomy.family || ''}</div>
+          </div>
+        </div>
+        <div class="podium-score">${sp.obs_count || 1} relevés</div>
+      </div>
     `;
-    fragment.appendChild(row);
   });
 
-  body.appendChild(fragment);
-  modal.classList.add('open');
+  podiumBox.innerHTML = `
+    <div class="stat-box-header">
+      <div class="stat-box-title">👑 Les 5 Espèces Reines du Terrain</div>
+      <span style="font-size:0.75rem; color:var(--text-dim);">Les plus documentées</span>
+    </div>
+    <div class="podium-list">${podiumHtml}</div>
+  `;
+  grid.appendChild(podiumBox);
+
+  // CADRAN 4 : Richesse spécifique par grands biomes
+  const biomeBox = document.createElement('div');
+  biomeBox.className = 'stat-box';
+  
+  const insectCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Insecta').length;
+  const plantCount = globalSpeciesData.filter(s => s.taxonomy.kingdom === 'Plantae').length;
+  const birdCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Aves').length;
+  const marineCount = globalSpeciesData.filter(s => ['Actinopterygii', 'Porifera', 'Cnidaria', 'Malacostraca'].includes(s.taxonomy.class) || s.taxonomy.phylum === 'Porifera').length;
+
+  biomeBox.innerHTML = `
+    <div class="stat-box-header">
+      <div class="stat-box-title">🌐 Équilibre des Grands Pôles Biologiques</div>
+      <span style="font-size:0.75rem; color:var(--text-dim);">Poids de biodiversité</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.85rem; justify-content:center; height:100%;">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+        <span>🐞 Entomofaune (Insectes)</span>
+        <strong style="color:var(--accent-amber);">${insectCount} espèces</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+        <span>🌿 Flore & Végétation</span>
+        <strong style="color:var(--accent-emerald);">${plantCount} espèces</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+        <span>🦅 Avifaune (Oiseaux)</span>
+        <strong style="color:var(--accent-cyan);">${birdCount} espèces</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+        <span>🐟 Faune Aquatique & Sous-marine</span>
+        <strong style="color:var(--accent-purple);">${marineCount} espèces</strong>
+      </div>
+    </div>
+  `;
+  grid.appendChild(biomeBox);
+
+  container.appendChild(grid);
 }
 
 function closeStatsModal() {
