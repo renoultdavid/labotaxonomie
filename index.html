@@ -105,7 +105,7 @@
                 </div>
               </div>
             </div>
-            <div class="results-content-wrap" id="expertResultsWrapper"></div>
+            <div class="thumbnail-grid" id="expertResultsWrapper"></div>
           </div>
         </div>
       </div>
@@ -142,8 +142,7 @@
                 <span id="geoVisibleTitle" style="color: var(--text-muted); font-weight: 600;">Espèces dans la zone visible</span>
                 <span id="geoVisibleCount" style="color: var(--accent-cyan); font-weight: 700; font-size: 0.75rem;">0 espèce</span>
               </div>
-              <!-- Conteneur scrollable identique -->
-              <div class="results-content-wrap" id="geoCardsContainer"></div>
+              <div class="thumbnail-grid" id="geoCardsContainer"></div>
             </div>
           </div>
         </div>
@@ -181,7 +180,7 @@
 
     <div class="module-view-stack">
       
-      <!-- Vue 2.1 : Mosaïque des Observations avec pagination -->
+      <!-- Vue 2.1 : Observations -->
       <div class="module-view active" id="view2-0">
         <div class="obs-workspace">
           
@@ -213,7 +212,6 @@
                 </select>
               </div>
 
-              <!-- Pagination tactile -->
               <div class="obs-paginator">
                 <button class="btn-page-nav" id="btnPagePrev" onclick="changeObsPage(-1)">&lt;</button>
                 <span id="obsPageIndicator" class="obs-page-num">Page 1 / 1</span>
@@ -224,8 +222,8 @@
             </div>
           </div>
 
-          <!-- Conteneur scrollable identique à la galerie qui marche -->
-          <div class="results-content-wrap" id="obsCardsGrid"></div>
+          <!-- Grille de miniatures universelle -->
+          <div class="thumbnail-grid" id="obsCardsGrid"></div>
         </div>
       </div>
 
