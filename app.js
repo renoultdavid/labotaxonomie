@@ -65,21 +65,21 @@ function isTrueSpecies(sp) {
   return parts.length >= 2 && !['Animalia', 'Plantae', 'Fungi', 'Arthropoda', 'Chordata', 'Insecta'].includes(parts[0]);
 }
 
-// FABRICATION UNIVERSELLE D'UNE VIGNETTE DE MOSAÏQUE
-function createThumbCard(sp, metaText) {
+// LA FONCTION STRICTEMENT IDENTIQUE POUR TOUTES LES VIGNETTES
+function createOriginalGalleryCard(sp, metaText) {
   const card = document.createElement('div');
-  card.className = 'thumb-card';
+  card.className = 'gallery-card';
   card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
   const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
 
-  const metaHtml = metaText ? `<div class="thumb-meta">${metaText}</div>` : '';
+  const metaHtml = metaText ? `<span class="gallery-meta">${metaText}</span>` : '';
 
   card.innerHTML = `
-    <img class="thumb-img" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-    <div class="thumb-gradient"></div>
-    <div class="thumb-body">
-      <span class="thumb-latin">${sp.scientific_name}</span>
-      <span class="thumb-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
+    <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
+    <div class="gallery-overlay"></div>
+    <div class="gallery-text">
+      <span class="gallery-latin">${sp.scientific_name}</span>
+      <span class="gallery-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
       ${metaHtml}
     </div>
   `;
@@ -127,9 +127,7 @@ function switchModuleTab(moduleId, tabIndex) {
   }
 }
 
-// ========================================================
-// 1. MODULE 1 - ONGLET 1 : EXPERT
-// ========================================================
+// 1. EXPERT
 function initDeepExpertTree() {
   if (!globalSpeciesData) return;
   const treeContainer = document.getElementById('expertTreeContainer');
@@ -253,18 +251,24 @@ function renderExpertResults(rank, value, pathContext) {
   renderExpertResultsDOM();
 }
 
+// Rendu identique original
 function renderExpertResultsDOM() {
   const container = document.getElementById('expertResultsWrapper');
   container.innerHTML = '';
   const slice = currentResultsList.slice(0, 100);
 
   if (resultsViewMode === 'gallery') {
-    container.className = 'thumbnail-grid';
+    const galleryDiv = document.createElement('div');
+    galleryDiv.className = 'results-gallery-mode';
+
     slice.forEach(sp => {
-      container.appendChild(createThumbCard(sp));
+      galleryDiv.appendChild(createOriginalGalleryCard(sp));
     });
+    container.appendChild(galleryDiv);
   } else {
-    container.className = 'results-list-wrap';
+    const listDiv = document.createElement('div');
+    listDiv.className = 'results-list-mode';
+
     slice.forEach(sp => {
       const row = document.createElement('div');
       row.className = 'species-row';
@@ -281,8 +285,9 @@ function renderExpertResultsDOM() {
         </div>
         <button class="btn-open-fiche">Fiche</button>
       `;
-      container.appendChild(row);
+      listDiv.appendChild(row);
     });
+    container.appendChild(listDiv);
   }
 
   container.scrollTop = 0;
@@ -307,9 +312,7 @@ document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
   renderExpertResultsDOM();
 });
 
-// ========================================================
-// 2. MODULE 1 - ONGLET 2 : GÉOGRAPHIE 2D
-// ========================================================
+// 2. GÉO 2D
 let geoMap = null;
 let clusterGroup = null;
 let activeGeoGroups = new Set(['all', 'Aves', 'Lepidoptera', 'Coleoptera', 'Araneae', 'Reptilia', 'Amphibia', 'Mammalia', 'Fish', 'Plantae', 'Fungi', 'Other']);
@@ -442,6 +445,7 @@ function populateGeoMarkers() {
   syncGeoRightPane();
 }
 
+// Plaque la grille exacte
 function syncGeoRightPane() {
   if (!geoMap || !globalSpeciesData) return;
   const bounds = geoMap.getBounds();
@@ -476,15 +480,18 @@ function syncGeoRightPane() {
   const container = document.getElementById('geoCardsContainer');
   container.innerHTML = '';
 
+  const galleryDiv = document.createElement('div');
+  galleryDiv.className = 'results-gallery-mode';
+
   const slice = visibleSpecies.slice(0, 80);
   slice.forEach(sp => {
-    container.appendChild(createThumbCard(sp, sp.place ? sp.place.split(',')[0] : ''));
+    galleryDiv.appendChild(createOriginalGalleryCard(sp, sp.place ? sp.place.split(',')[0] : ''));
   });
+
+  container.appendChild(galleryDiv);
 }
 
-// ========================================================
-// 3. MODULE 1 - ONGLET 3 : RECHERCHE VISUELLE
-// ========================================================
+// 3. VISUEL
 const visualTree = [
   {
     id: 'birds',
@@ -696,19 +703,17 @@ function visualNavigateToSpecies(macroId, subId) {
   const container = document.getElementById('visualContentArea');
   container.innerHTML = '';
 
-  const grid = document.createElement('div');
-  grid.className = 'thumbnail-grid';
+  const galleryDiv = document.createElement('div');
+  galleryDiv.className = 'results-gallery-mode';
 
   matchingSpecies.slice(0, 120).forEach(sp => {
-    grid.appendChild(createThumbCard(sp));
+    galleryDiv.appendChild(createOriginalGalleryCard(sp));
   });
 
-  container.appendChild(grid);
+  container.appendChild(galleryDiv);
 }
 
-// ========================================================
-// 4. MODULE 2 - ONGLET 1 : OBSERVATIONS (MINIATURES DIRECTES)
-// ========================================================
+// 4. OBSERVATIONS
 let obsFilteredData = [];
 let obsCurrentPage = 1;
 let obsPageSize = 100;
@@ -744,7 +749,6 @@ function applyObsFilteringAndSorting() {
     });
   }
 
-  // Élimine strictement Animalia et Plantae du tri de fréquence
   if (sortMode === 'freq-desc' || sortMode === 'freq-asc') {
     baseList = baseList.filter(isTrueSpecies);
   }
@@ -785,23 +789,26 @@ function changeObsPage(delta) {
   document.getElementById('obsCardsGrid').scrollTop = 0;
 }
 
-// INJECTION DIRECTE DANS LA GRILLE SANS WRAPPER
+// Plaque la même grille que dans l'onglet Expert
 function renderObsCards() {
   const container = document.getElementById('obsCardsGrid');
   container.innerHTML = '';
+
+  const galleryDiv = document.createElement('div');
+  galleryDiv.className = 'results-gallery-mode';
 
   const start = (obsCurrentPage - 1) * obsPageSize;
   const slice = obsFilteredData.slice(start, start + obsPageSize);
 
   slice.forEach(sp => {
     const metaText = `${sp.place ? sp.place.split(',')[0] : 'Station'} • ${sp.last_observed || 'Non daté'}`;
-    container.appendChild(createThumbCard(sp, metaText));
+    galleryDiv.appendChild(createOriginalGalleryCard(sp, metaText));
   });
+
+  container.appendChild(galleryDiv);
 }
 
-// ========================================================
-// 5. MODULE 2 - ONGLET 2 : STATISTIQUES & PHÉNOLOGIE
-// ========================================================
+// 5. STATISTIQUES
 function initStatsDashboard() {
   if (!globalSpeciesData) return;
   const container = document.getElementById('statsDashboardArea');
@@ -811,7 +818,6 @@ function initStatsDashboard() {
   const totalTrueSpecies = trueSpeciesList.length;
   const totalObs = globalSpeciesData.reduce((acc, s) => acc + (s.obs_count || 1), 0);
 
-  // Phénologie (12 mois)
   const monthCounts = new Array(12).fill(0);
   globalSpeciesData.forEach(s => {
     if (s.last_observed) {
@@ -825,7 +831,6 @@ function initStatsDashboard() {
   const maxMonth = Math.max(...monthCounts, 1);
   const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 
-  // Donut de Rareté
   const rareCount = trueSpeciesList.filter(s => (s.obs_count || 1) === 1).length;
   const moderateCount = trueSpeciesList.filter(s => (s.obs_count || 1) >= 2 && (s.obs_count || 1) <= 4).length;
   const frequentCount = trueSpeciesList.filter(s => (s.obs_count || 1) >= 5).length;
@@ -868,7 +873,6 @@ function initStatsDashboard() {
   const grid = document.createElement('div');
   grid.className = 'stats-grid-2x2';
 
-  // Cadran 1 : Phénologie
   const phenoBox = document.createElement('div');
   phenoBox.className = 'stat-box';
   let phenoBarsHtml = '';
@@ -894,7 +898,6 @@ function initStatsDashboard() {
   `;
   grid.appendChild(phenoBox);
 
-  // Cadran 2 : Donut de Rareté
   const rarityBox = document.createElement('div');
   rarityBox.className = 'stat-box';
   rarityBox.innerHTML = `
@@ -936,7 +939,6 @@ function initStatsDashboard() {
   `;
   grid.appendChild(rarityBox);
 
-  // Cadran 3 : Podium 5 Espèces Stars
   const podiumBox = document.createElement('div');
   podiumBox.className = 'stat-box';
   let podiumHtml = '';
@@ -966,7 +968,6 @@ function initStatsDashboard() {
   `;
   grid.appendChild(podiumBox);
 
-  // Cadran 4 : Biomes
   const biomeBox = document.createElement('div');
   biomeBox.className = 'stat-box';
   const insectCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Insecta').length;
@@ -1001,8 +1002,4 @@ function initStatsDashboard() {
   grid.appendChild(biomeBox);
 
   container.appendChild(grid);
-}
-
-function closeStatsModal() {
-  document.getElementById('statsModal').classList.remove('open');
 }
