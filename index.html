@@ -14,7 +14,6 @@
       --border-focus: #38bdf8;
       --accent-cyan: #38bdf8;
       --accent-emerald: #10b981;
-      --accent-amber: #f59e0b;
       --text-main: #f8fafc;
       --text-muted: #cbd5e1;
       --text-dim: #94a3b8;
@@ -358,9 +357,8 @@
       overflow: hidden;
     }
 
-    /* Volet gauche de l'arbre expert */
     .expert-tree-pane {
-      width: 420px;
+      width: 440px;
       background: #080c14;
       border-right: 1px solid var(--border);
       display: flex;
@@ -408,14 +406,14 @@
     }
 
     .taxo-node {
-      margin-bottom: 0.2rem;
+      margin-bottom: 0.15rem;
     }
 
     .taxo-label {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.4rem 0.6rem;
+      padding: 0.35rem 0.55rem;
       border-radius: 6px;
       cursor: pointer;
       user-select: none;
@@ -436,7 +434,7 @@
     .taxo-names {
       display: flex;
       align-items: baseline;
-      gap: 0.5rem;
+      gap: 0.45rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -457,7 +455,7 @@
       font-size: 0.7rem;
       background: #04060a;
       border: 1px solid var(--border);
-      padding: 0.15rem 0.45rem;
+      padding: 0.1rem 0.4rem;
       border-radius: 4px;
       color: var(--text-muted);
       font-weight: 600;
@@ -465,9 +463,9 @@
     }
 
     .taxo-children {
-      margin-left: 1rem;
+      margin-left: 0.9rem;
       border-left: 1px dashed rgba(255, 255, 255, 0.1);
-      padding-left: 0.4rem;
+      padding-left: 0.35rem;
       display: none;
     }
 
@@ -495,20 +493,50 @@
       font-size: 0.8rem;
     }
 
-    .results-list {
+    .view-switchers {
+      display: flex;
+      background: #04060a;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.15rem;
+      gap: 0.15rem;
+    }
+
+    .btn-view-toggle {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-view-toggle.active {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+    }
+
+    /* Conteneur dynamique (Liste vs Galerie) */
+    .results-content-wrap {
       flex: 1;
       overflow-y: auto;
       padding: 1rem 1.25rem;
+    }
+
+    /* 1. Mode Liste */
+    .results-list-mode {
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 0.5rem;
     }
 
     .species-row {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 0.65rem 0.85rem;
+      padding: 0.6rem 0.85rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -530,8 +558,8 @@
     }
 
     .species-mini-thumb {
-      width: 46px;
-      height: 46px;
+      width: 44px;
+      height: 44px;
       border-radius: 6px;
       background: #020408;
       object-fit: cover;
@@ -557,27 +585,11 @@
     }
 
     .species-vernacular {
-      font-size: 0.775rem;
+      font-size: 0.75rem;
       color: var(--text-dim);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-
-    .species-meta {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .species-drive-badge {
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: var(--accent-emerald);
-      font-size: 0.65rem;
-      padding: 0.2rem 0.45rem;
-      border-radius: 4px;
-      font-weight: 700;
     }
 
     .btn-open-fiche {
@@ -588,9 +600,80 @@
       border-radius: 6px;
       font-size: 0.75rem;
       font-weight: 600;
+      flex-shrink: 0;
     }
 
-    /* Placeholders des autres vues */
+    /* 2. Mode Galerie Miniatures */
+    .results-gallery-mode {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .gallery-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      aspect-ratio: 1/1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .gallery-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
+
+    .gallery-photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #020408;
+    }
+
+    .gallery-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(5, 7, 11, 0.85) 80%, rgba(5, 7, 11, 0.98) 100%);
+      z-index: 2;
+    }
+
+    .gallery-text {
+      position: relative;
+      z-index: 3;
+      padding: 0.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+    .gallery-latin {
+      font-size: 0.78rem;
+      font-weight: 700;
+      font-style: italic;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .gallery-vern {
+      font-size: 0.68rem;
+      color: var(--accent-cyan);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .view-placeholder {
       display: flex;
       flex-direction: column;
@@ -623,15 +706,13 @@
       }
       .pane-title { font-size: 1.8rem; }
       .expert-workspace { flex-direction: column; }
-      .expert-tree-pane { width: 100%; height: 45%; }
+      .expert-tree-pane { width: 100%; height: 42%; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ========================================================
-       ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF
-       ======================================================== -->
+  <!-- ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF -->
   <div id="homeScreen">
     
     <!-- Volet 1 : Recherche d'Espèce -->
@@ -676,9 +757,7 @@
 
   </div>
 
-  <!-- ========================================================
-       MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS)
-       ======================================================== -->
+  <!-- MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS) -->
   <div class="app-module" id="module1">
     <div class="module-topbar">
       <div class="module-nav-left">
@@ -698,30 +777,34 @@
       <div class="module-view active" id="view1-0">
         <div class="expert-workspace">
           
-          <!-- Volet gauche de l'arbre cladistique -->
+          <!-- Volet gauche de l'arbre cladistique complet -->
           <div class="expert-tree-pane">
             <div class="tree-filter-bar">
-              <input type="text" id="expertTreeSearch" class="tree-search-input" placeholder="Rechercher (latin, français, famille)..." />
+              <input type="text" id="expertTreeSearch" class="tree-search-input" placeholder="Rechercher (latin, français, famille, genre)..." />
               <div class="tree-stats-row">
-                <span id="treeStatusLabel">Arbre taxonomique complet</span>
+                <span id="treeStatusLabel">Arbre complet (Règne à Espèce)</span>
                 <span id="treeTotalCount" style="color: var(--accent-cyan); font-weight: 700;">—</span>
               </div>
             </div>
             <div class="expert-tree-scroll" id="expertTreeContainer">
-              <!-- Nœuds générés de façon progressive -->
+              <!-- Nœuds construits dynamiquement jusqu'à l'espèce -->
             </div>
           </div>
 
           <!-- Volet droit des espèces associées -->
           <div class="expert-results-pane">
             <div class="results-subbar">
-              <div id="resultsFilterTitle" style="color: var(--text-muted); font-weight: 600;">Sélectionnez une branche ou tapez une recherche</div>
-              <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <div id="resultsFilterTitle" style="color: var(--text-muted); font-weight: 600;">Sélectionnez une branche dans l'arbre</div>
+              <div style="display: flex; gap: 0.75rem; align-items: center;">
                 <span id="resultsCountBadge" style="color: var(--text-dim); font-size: 0.75rem;">0 espèce</span>
+                <div class="view-switchers">
+                  <button class="btn-view-toggle active" id="btnViewList" onclick="setResultsViewMode('list')">≡ Liste</button>
+                  <button class="btn-view-toggle" id="btnViewGallery" onclick="setResultsViewMode('gallery')">⊞ Galerie</button>
+                </div>
               </div>
             </div>
-            <div class="results-list" id="expertResultsList">
-              <!-- Lignes d'espèces générées sans saccade -->
+            <div class="results-content-wrap" id="expertResultsWrapper">
+              <!-- Rendu dynamique Liste ou Galerie sans tag Drive -->
             </div>
           </div>
 
@@ -780,7 +863,10 @@
   <script>
     let globalSpeciesData = null;
     let expertCurrentSelection = { rank: null, value: null };
-    let vernMap = {
+    let currentResultsList = [];
+    let resultsViewMode = 'list'; // 'list' ou 'gallery'
+
+    const vernMap = {
       'Animalia': 'Animaux',
       'Plantae': 'Végétaux',
       'Fungi': 'Champignons',
@@ -802,13 +888,12 @@
       'Hemiptera': 'Punaises & Cigales'
     };
 
-    // Chargement différé
     fetch('data.json')
       .then(res => res.json())
       .then(data => {
         globalSpeciesData = data;
         document.getElementById('treeTotalCount').innerText = `${data.length.toLocaleString('fr-FR')} espèces`;
-        initExpertTree();
+        initDeepExpertTree();
       })
       .catch(err => console.warn('data.json...', err));
 
@@ -831,115 +916,105 @@
     }
 
     // ========================================================
-    // LOGIQUE OPTIMISÉE POUR L'ONGLET EXPERT (ZERO SACCADE CPU)
+    // ARBRE EXPERT EN PROFONDEUR : RÈGNE JUSQU'À L'ESPÈCE
     // ========================================================
-    function initExpertTree() {
+    function initDeepExpertTree() {
       if (!globalSpeciesData) return;
       const treeContainer = document.getElementById('expertTreeContainer');
       treeContainer.innerHTML = '';
 
-      // Structure allégée : Règne -> Embranchement -> Ordre
-      const tree = {};
+      // Compteurs au niveau Règne
+      const kingdoms = {};
       globalSpeciesData.forEach(sp => {
         const k = sp.taxonomy.kingdom || 'Incertae sedis';
-        const p = sp.taxonomy.phylum || 'Embranchement indét.';
-        const o = sp.taxonomy.order || 'Ordre indét.';
-
-        if (!tree[k]) tree[k] = { count: 0, phyla: {} };
-        tree[k].count++;
-
-        if (!tree[k].phyla[p]) tree[k].phyla[p] = { count: 0, orders: {} };
-        tree[k].phyla[p].count++;
-
-        if (!tree[k].phyla[p].orders[o]) tree[k].phyla[p].orders[o] = 0;
-        tree[k].phyla[p].orders[o]++;
+        kingdoms[k] = (kingdoms[k] || 0) + 1;
       });
 
-      // Construction du DOM par fragment (soulage l'iPad)
       const fragment = document.createDocumentFragment();
 
-      Object.keys(tree).sort().forEach(k => {
-        const kNode = document.createElement('div');
-        kNode.className = 'taxo-node';
-
-        const kLabel = document.createElement('div');
-        kLabel.className = 'taxo-label';
-        kLabel.innerHTML = `
-          <div class="taxo-names">
-            <span class="taxo-latin">${k}</span>
-            <span class="taxo-vern">${vernMap[k] || ''}</span>
-          </div>
-          <span class="taxo-badge">${tree[k].count}</span>
-        `;
-
-        const kChildren = document.createElement('div');
-        kChildren.className = 'taxo-children';
-
-        Object.keys(tree[k].phyla).sort().forEach(p => {
-          const pNode = document.createElement('div');
-          pNode.className = 'taxo-node';
-
-          const pLabel = document.createElement('div');
-          pLabel.className = 'taxo-label';
-          pLabel.innerHTML = `
-            <div class="taxo-names">
-              <span class="taxo-latin">${p}</span>
-              <span class="taxo-vern">${vernMap[p] || ''}</span>
-            </div>
-            <span class="taxo-badge">${tree[k].phyla[p].count}</span>
-          `;
-
-          const pChildren = document.createElement('div');
-          pChildren.className = 'taxo-children';
-
-          Object.keys(tree[k].phyla[p].orders).sort().forEach(o => {
-            const oLabel = document.createElement('div');
-            oLabel.className = 'taxo-label';
-            oLabel.innerHTML = `
-              <div class="taxo-names">
-                <span class="taxo-latin">${o}</span>
-                <span class="taxo-vern">${vernMap[o] || ''}</span>
-              </div>
-              <span class="taxo-badge">${tree[k].phyla[p].orders[o]}</span>
-            `;
-
-            oLabel.onclick = (e) => {
-              e.stopPropagation();
-              highlightLabel(oLabel);
-              renderExpertSpecies('order', o);
-            };
-
-            pChildren.appendChild(oLabel);
-          });
-
-          pLabel.onclick = (e) => {
-            e.stopPropagation();
-            pChildren.classList.toggle('open');
-            highlightLabel(pLabel);
-            renderExpertSpecies('phylum', p);
-          };
-
-          pNode.appendChild(pLabel);
-          pNode.appendChild(pChildren);
-          kChildren.appendChild(pNode);
-        });
-
-        kLabel.onclick = (e) => {
-          e.stopPropagation();
-          kChildren.classList.toggle('open');
-          highlightLabel(kLabel);
-          renderExpertSpecies('kingdom', k);
-        };
-
-        kNode.appendChild(kLabel);
-        kNode.appendChild(kChildren);
-        fragment.appendChild(kNode);
+      Object.keys(kingdoms).sort().forEach(k => {
+        const node = createDynamicNode('kingdom', k, kingdoms[k], { kingdom: k });
+        fragment.appendChild(node);
       });
 
       treeContainer.appendChild(fragment);
+      renderExpertResults(null, null);
+    }
 
-      // Par défaut, afficher les premiers spécimens
-      renderExpertSpecies(null, null);
+    // Création paresseuse des nœuds pour soulager le CPU sur iPad
+    function createDynamicNode(rank, name, count, pathContext) {
+      const div = document.createElement('div');
+      div.className = 'taxo-node';
+
+      const label = document.createElement('div');
+      label.className = 'taxo-label';
+      label.innerHTML = `
+        <div class="taxo-names">
+          <span class="taxo-latin">${name}</span>
+          <span class="taxo-vern">${vernMap[name] || ''}</span>
+        </div>
+        <span class="taxo-badge">${count}</span>
+      `;
+
+      const children = document.createElement('div');
+      children.className = 'taxo-children';
+      let isLoaded = false;
+
+      label.onclick = (e) => {
+        e.stopPropagation();
+        highlightLabel(label);
+        renderExpertResults(rank, name, pathContext);
+
+        // Si c'est l'espèce, on ne descend plus
+        if (rank === 'species') return;
+
+        // Chargement à la demande de l'étage suivant
+        if (!isLoaded) {
+          loadNextRankChildren(rank, pathContext, children);
+          isLoaded = true;
+        }
+
+        children.classList.toggle('open');
+      };
+
+      div.appendChild(label);
+      div.appendChild(children);
+      return div;
+    }
+
+    function loadNextRankChildren(currentRank, pathContext, container) {
+      const rankOrder = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'];
+      const nextIdx = rankOrder.indexOf(currentRank) + 1;
+      if (nextIdx >= rankOrder.length) return;
+      const nextRank = rankOrder[nextIdx];
+
+      // Filtrer les spécimens sous le contexte parent
+      let scoped = globalSpeciesData;
+      for (const k in pathContext) {
+        if (k === 'species') scoped = scoped.filter(s => s.scientific_name === pathContext[k]);
+        else scoped = scoped.filter(s => s.taxonomy[k] === pathContext[k]);
+      }
+
+      // Regrouper par le rang suivant
+      const groups = {};
+      scoped.forEach(sp => {
+        let val = '';
+        if (nextRank === 'species') {
+          val = sp.scientific_name;
+        } else {
+          val = sp.taxonomy[nextRank] || `${nextRank} indét.`;
+        }
+        groups[val] = (groups[val] || 0) + 1;
+      });
+
+      const fragment = document.createDocumentFragment();
+      Object.keys(groups).sort().forEach(subName => {
+        const subContext = { ...pathContext, [nextRank]: subName };
+        const childNode = createDynamicNode(nextRank, subName, groups[subName], subContext);
+        fragment.appendChild(childNode);
+      });
+
+      container.appendChild(fragment);
     }
 
     function highlightLabel(labelEl) {
@@ -947,104 +1022,124 @@
       labelEl.classList.add('active');
     }
 
-    function renderExpertSpecies(rank, value) {
+    // ========================================================
+    // AFFICHAGE DES RÉSULTATS (LISTE OU GALERIE)
+    // ========================================================
+    function setResultsViewMode(mode) {
+      resultsViewMode = mode;
+      document.getElementById('btnViewList').classList.toggle('active', mode === 'list');
+      document.getElementById('btnViewGallery').classList.toggle('active', mode === 'gallery');
+      renderResultsDOM();
+    }
+
+    function renderExpertResults(rank, value, pathContext) {
       if (!globalSpeciesData) return;
-      expertCurrentSelection = { rank, value };
+      expertCurrentSelection = { rank, value, pathContext };
 
-      const listContainer = document.getElementById('expertResultsList');
-      listContainer.innerHTML = '';
-
-      let results = globalSpeciesData;
       if (rank && value) {
-        results = results.filter(sp => sp.taxonomy[rank] === value);
+        let filtered = globalSpeciesData;
+        if (pathContext) {
+          for (const k in pathContext) {
+            if (k === 'species') filtered = filtered.filter(s => s.scientific_name === pathContext[k]);
+            else filtered = filtered.filter(s => s.taxonomy[k] === pathContext[k]);
+          }
+        } else {
+          if (rank === 'species') filtered = filtered.filter(s => s.scientific_name === value);
+          else filtered = filtered.filter(s => s.taxonomy[rank] === value);
+        }
+        currentResultsList = filtered;
         document.getElementById('resultsFilterTitle').innerText = `${rank.toUpperCase()} : ${value} ${vernMap[value] ? '(' + vernMap[value] + ')' : ''}`;
       } else {
+        currentResultsList = globalSpeciesData;
         document.getElementById('resultsFilterTitle').innerText = 'Ensemble des espèces répertoriées';
       }
 
-      document.getElementById('resultsCountBadge').innerText = `${results.length.toLocaleString('fr-FR')} espèce(s)`;
-
-      // Affichage limité à 100 lignes par page pour un défilement à 60 fps
-      const slice = results.slice(0, 100);
-      const fragment = document.createDocumentFragment();
-
-      slice.forEach(sp => {
-        const row = document.createElement('div');
-        row.className = 'species-row';
-        row.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
-
-        const thumb = sp.photo_url || 'https://via.placeholder.com/80x80/080c14/475569?text=?';
-        const driveBadge = sp.drive_folder_id ? `<span class="species-drive-badge">DRIVE</span>` : '';
-
-        row.innerHTML = `
-          <div class="species-left">
-            <img class="species-mini-thumb" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-            <div class="species-text">
-              <span class="species-latin">${sp.scientific_name}</span>
-              <span class="species-vernacular">${sp.common_name || sp.taxonomy.family || 'Taxon validé'}</span>
-            </div>
-          </div>
-          <div class="species-meta">
-            ${driveBadge}
-            <button class="btn-open-fiche">Fiche</button>
-          </div>
-        `;
-        fragment.appendChild(row);
-      });
-
-      listContainer.appendChild(fragment);
+      document.getElementById('resultsCountBadge').innerText = `${currentResultsList.length.toLocaleString('fr-FR')} espèce(s)`;
+      renderResultsDOM();
     }
 
-    // Moteur de recherche de l'arbre expert
+    function renderResultsDOM() {
+      const container = document.getElementById('expertResultsWrapper');
+      container.innerHTML = '';
+
+      const slice = currentResultsList.slice(0, 100);
+      const fragment = document.createDocumentFragment();
+
+      if (resultsViewMode === 'list') {
+        const listDiv = document.createElement('div');
+        listDiv.className = 'results-list-mode';
+
+        slice.forEach(sp => {
+          const row = document.createElement('div');
+          row.className = 'species-row';
+          row.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
+
+          const thumb = sp.photo_url || 'https://via.placeholder.com/80x80/080c14/475569?text=?';
+
+          row.innerHTML = `
+            <div class="species-left">
+              <img class="species-mini-thumb" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
+              <div class="species-text">
+                <span class="species-latin">${sp.scientific_name}</span>
+                <span class="species-vernacular">${sp.common_name || sp.taxonomy.family || 'Taxon validé'}</span>
+              </div>
+            </div>
+            <button class="btn-open-fiche">Fiche</button>
+          `;
+          listDiv.appendChild(row);
+        });
+        fragment.appendChild(listDiv);
+      } else {
+        // Mode Galerie Miniatures
+        const galleryDiv = document.createElement('div');
+        galleryDiv.className = 'results-gallery-mode';
+
+        slice.forEach(sp => {
+          const card = document.createElement('div');
+          card.className = 'gallery-card';
+          card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
+
+          const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
+
+          card.innerHTML = `
+            <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
+            <div class="gallery-overlay"></div>
+            <div class="gallery-text">
+              <span class="gallery-latin">${sp.scientific_name}</span>
+              <span class="gallery-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
+            </div>
+          `;
+          galleryDiv.appendChild(card);
+        });
+        fragment.appendChild(galleryDiv);
+      }
+
+      container.appendChild(fragment);
+      container.scrollTop = 0;
+    }
+
+    // Moteur de recherche globale dans l'arbre expert
     document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase().trim();
       if (!globalSpeciesData) return;
 
       if (!q) {
-        renderExpertSpecies(null, null);
+        renderExpertResults(null, null);
         return;
       }
 
-      const matches = globalSpeciesData.filter(sp => {
+      currentResultsList = globalSpeciesData.filter(sp => {
         const sci = sp.scientific_name.toLowerCase();
         const vern = (sp.common_name || '').toLowerCase();
+        const gen = (sp.taxonomy.genus || '').toLowerCase();
         const fam = (sp.taxonomy.family || '').toLowerCase();
         const ord = (sp.taxonomy.order || '').toLowerCase();
-        return sci.includes(q) || vern.includes(q) || fam.includes(q) || ord.includes(q);
+        return sci.includes(q) || vern.includes(q) || gen.includes(q) || fam.includes(q) || ord.includes(q);
       });
 
       document.getElementById('resultsFilterTitle').innerText = `Recherche : "${q}"`;
-      document.getElementById('resultsCountBadge').innerText = `${matches.length.toLocaleString('fr-FR')} résultat(s)`;
-
-      const listContainer = document.getElementById('expertResultsList');
-      listContainer.innerHTML = '';
-      const fragment = document.createDocumentFragment();
-
-      matches.slice(0, 100).forEach(sp => {
-        const row = document.createElement('div');
-        row.className = 'species-row';
-        row.onclick = () => alert(`Super-Fiche pour : ${sp.scientific_name}`);
-
-        const thumb = sp.photo_url || 'https://via.placeholder.com/80x80/080c14/475569?text=?';
-        const driveBadge = sp.drive_folder_id ? `<span class="species-drive-badge">DRIVE</span>` : '';
-
-        row.innerHTML = `
-          <div class="species-left">
-            <img class="species-mini-thumb" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-            <div class="species-text">
-              <span class="species-latin">${sp.scientific_name}</span>
-              <span class="species-vernacular">${sp.common_name || sp.taxonomy.family || 'Taxon validé'}</span>
-            </div>
-          </div>
-          <div class="species-meta">
-            ${driveBadge}
-            <button class="btn-open-fiche">Fiche</button>
-          </div>
-        `;
-        fragment.appendChild(row);
-      });
-
-      listContainer.appendChild(fragment);
+      document.getElementById('resultsCountBadge').innerText = `${currentResultsList.length.toLocaleString('fr-FR')} résultat(s)`;
+      renderResultsDOM();
     });
   </script>
 </body>
