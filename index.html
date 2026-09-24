@@ -142,7 +142,8 @@
                 <span id="geoVisibleTitle" style="color: var(--text-muted); font-weight: 600;">Espèces dans la zone visible</span>
                 <span id="geoVisibleCount" style="color: var(--accent-cyan); font-weight: 700; font-size: 0.75rem;">0 espèce</span>
               </div>
-              <div class="geo-cards-scroll" id="geoCardsContainer"></div>
+              <!-- Conteneur scrollable identique -->
+              <div class="results-content-wrap" id="geoCardsContainer"></div>
             </div>
           </div>
         </div>
@@ -180,7 +181,7 @@
 
     <div class="module-view-stack">
       
-      <!-- Vue 2.1 : Mosaïque Carrée Régulière + Pagination Stable -->
+      <!-- Vue 2.1 : Mosaïque des Observations avec pagination -->
       <div class="module-view active" id="view2-0">
         <div class="obs-workspace">
           
@@ -212,7 +213,7 @@
                 </select>
               </div>
 
-              <!-- Pagination tactile et précise -->
+              <!-- Pagination tactile -->
               <div class="obs-paginator">
                 <button class="btn-page-nav" id="btnPagePrev" onclick="changeObsPage(-1)">&lt;</button>
                 <span id="obsPageIndicator" class="obs-page-num">Page 1 / 1</span>
@@ -223,12 +224,12 @@
             </div>
           </div>
 
-          <!-- Grille strictement identique au Volet 1 -->
-          <div class="obs-matrix-scroll" id="obsCardsGrid"></div>
+          <!-- Conteneur scrollable identique à la galerie qui marche -->
+          <div class="results-content-wrap" id="obsCardsGrid"></div>
         </div>
       </div>
 
-      <!-- Vue 2.2 : Tableau de bord analytique haute tenue -->
+      <!-- Vue 2.2 : Tableau de bord analytique -->
       <div class="module-view" id="view2-1">
         <div class="stats-dashboard-scroll" id="statsDashboardArea"></div>
       </div>
