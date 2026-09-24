@@ -107,7 +107,7 @@ function switchModuleTab(moduleId, tabIndex) {
 }
 
 // ========================================================
-// 1. MODULE 1 : RECHERCHE EXPERT
+// 1. MODULE 1 - ONGLET 1 : EXPERT
 // ========================================================
 function initDeepExpertTree() {
   if (!globalSpeciesData) return;
@@ -205,7 +205,7 @@ function setResultsViewMode(mode) {
   resultsViewMode = mode;
   document.getElementById('btnViewGallery').classList.toggle('active', mode === 'gallery');
   document.getElementById('btnViewList').classList.toggle('active', mode === 'list');
-  renderResultsDOM();
+  renderExpertResultsDOM();
 }
 
 function renderExpertResults(rank, value, pathContext) {
@@ -229,36 +229,23 @@ function renderExpertResults(rank, value, pathContext) {
   }
 
   document.getElementById('resultsCountBadge').innerText = `${currentResultsList.length.toLocaleString('fr-FR')} espèce(s)`;
-  renderResultsDOM();
+  renderExpertResultsDOM();
 }
 
-function renderResultsDOM() {
+function renderExpertResultsDOM() {
   const container = document.getElementById('expertResultsWrapper');
   container.innerHTML = '';
   const slice = currentResultsList.slice(0, 100);
-  const fragment = document.createDocumentFragment();
 
   if (resultsViewMode === 'gallery') {
     const galleryDiv = document.createElement('div');
     galleryDiv.className = 'results-gallery-mode';
 
     slice.forEach(sp => {
-      const card = document.createElement('div');
-      card.className = 'gallery-card';
-      card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
-      const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
-
-      card.innerHTML = `
-        <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-        <div class="gallery-overlay"></div>
-        <div class="gallery-text">
-          <span class="gallery-latin">${sp.scientific_name}</span>
-          <span class="gallery-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
-        </div>
-      `;
+      const card = createUniversalGalleryCard(sp);
       galleryDiv.appendChild(card);
     });
-    fragment.appendChild(galleryDiv);
+    container.appendChild(galleryDiv);
   } else {
     const listDiv = document.createElement('div');
     listDiv.className = 'results-list-mode';
@@ -281,11 +268,31 @@ function renderResultsDOM() {
       `;
       listDiv.appendChild(row);
     });
-    fragment.appendChild(listDiv);
+    container.appendChild(listDiv);
   }
 
-  container.appendChild(fragment);
   container.scrollTop = 0;
+}
+
+// Générateur universel de carte galerie pour garantir 0 empilement
+function createUniversalGalleryCard(sp, extraMeta) {
+  const card = document.createElement('div');
+  card.className = 'gallery-card';
+  card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
+  const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
+
+  const metaHtml = extraMeta ? `<div class="gallery-meta">${extraMeta}</div>` : '';
+
+  card.innerHTML = `
+    <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
+    <div class="gallery-overlay"></div>
+    <div class="gallery-text">
+      <span class="gallery-latin">${sp.scientific_name}</span>
+      <span class="gallery-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
+      ${metaHtml}
+    </div>
+  `;
+  return card;
 }
 
 document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
@@ -304,11 +311,11 @@ document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
 
   document.getElementById('resultsFilterTitle').innerText = `Recherche : "${e.target.value}"`;
   document.getElementById('resultsCountBadge').innerText = `${currentResultsList.length.toLocaleString('fr-FR')} résultat(s)`;
-  renderResultsDOM();
+  renderExpertResultsDOM();
 });
 
 // ========================================================
-// GÉOGRAPHIE 2D
+// 2. MODULE 1 - ONGLET 2 : GÉOGRAPHIE 2D (MOSAÏQUE BLINDÉE)
 // ========================================================
 let geoMap = null;
 let clusterGroup = null;
@@ -442,6 +449,7 @@ function populateGeoMarkers() {
   syncGeoRightPane();
 }
 
+// CORRECTION MAJEURE : Mosaïque identique à l'onglet 1
 function syncGeoRightPane() {
   if (!geoMap || !globalSpeciesData) return;
   const bounds = geoMap.getBounds();
@@ -475,31 +483,21 @@ function syncGeoRightPane() {
   document.getElementById('geoVisibleCount').innerText = `${visibleSpecies.length.toLocaleString('fr-FR')} espèce(s)`;
   const container = document.getElementById('geoCardsContainer');
   container.innerHTML = '';
+
+  const galleryGrid = document.createElement('div');
+  galleryGrid.className = 'results-gallery-mode';
+
   const slice = visibleSpecies.slice(0, 80);
-  const fragment = document.createDocumentFragment();
-
   slice.forEach(sp => {
-    const card = document.createElement('div');
-    card.className = 'gallery-card';
-    card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
-    const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
-
-    card.innerHTML = `
-      <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-      <div class="gallery-overlay"></div>
-      <div class="gallery-text">
-        <span class="gallery-latin">${sp.scientific_name}</span>
-        <span class="gallery-vern">${sp.common_name || sp.place || ''}</span>
-      </div>
-    `;
-    fragment.appendChild(card);
+    const card = createUniversalGalleryCard(sp, sp.place ? sp.place.split(',')[0] : '');
+    galleryGrid.appendChild(card);
   });
 
-  container.appendChild(fragment);
+  container.appendChild(galleryGrid);
 }
 
 // ========================================================
-// RECHERCHE VISUELLE
+// 3. MODULE 1 - ONGLET 3 : RECHERCHE VISUELLE
 // ========================================================
 const visualTree = [
   {
@@ -712,22 +710,10 @@ function visualNavigateToSpecies(macroId, subId) {
   const container = document.getElementById('visualContentArea');
   container.innerHTML = '';
   const grid = document.createElement('div');
-  grid.className = 'visual-species-grid';
+  grid.className = 'results-gallery-mode';
 
   matchingSpecies.slice(0, 120).forEach(sp => {
-    const card = document.createElement('div');
-    card.className = 'gallery-card';
-    card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
-    const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
-
-    card.innerHTML = `
-      <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-      <div class="gallery-overlay"></div>
-      <div class="gallery-text">
-        <span class="gallery-latin">${sp.scientific_name}</span>
-        <span class="gallery-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
-      </div>
-    `;
+    const card = createUniversalGalleryCard(sp);
     grid.appendChild(card);
   });
 
@@ -735,7 +721,7 @@ function visualNavigateToSpecies(macroId, subId) {
 }
 
 // ========================================================
-// 2. MODULE 2 - ONGLET 1 : OBSERVATIONS (SYNCHRO RIGUREUSE)
+// 4. MODULE 2 - ONGLET 1 : OBSERVATIONS (CORRECTION SOLITAIRE)
 // ========================================================
 let obsFilteredData = [];
 let obsCurrentPage = 1;
@@ -772,7 +758,7 @@ function applyObsFilteringAndSorting() {
     });
   }
 
-  // Filtrage strict : pas d'Animalia ou Plantae dans le top fréquence
+  // Élimine strictement Animalia et Plantae du tri de fréquence
   if (sortMode === 'freq-desc' || sortMode === 'freq-asc') {
     baseList = baseList.filter(isTrueSpecies);
   }
@@ -813,38 +799,28 @@ function changeObsPage(delta) {
   document.getElementById('obsCardsGrid').scrollTop = 0;
 }
 
-// Rendu identique à la galerie du Volet 1
+// CORRECTION MAJEURE : Utilisation de la grille 'results-gallery-mode' et de 'createUniversalGalleryCard'
 function renderObsCards() {
   const container = document.getElementById('obsCardsGrid');
   container.innerHTML = '';
 
+  const galleryGrid = document.createElement('div');
+  galleryGrid.className = 'results-gallery-mode';
+
   const start = (obsCurrentPage - 1) * obsPageSize;
   const slice = obsFilteredData.slice(start, start + obsPageSize);
-  const fragment = document.createDocumentFragment();
 
   slice.forEach(sp => {
-    const card = document.createElement('div');
-    card.className = 'obs-card';
-    card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
-    const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
-
-    card.innerHTML = `
-      <img class="obs-card-img" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-      <div class="obs-card-overlay"></div>
-      <div class="obs-card-content">
-        <div class="obs-sci">${sp.scientific_name}</div>
-        <div class="obs-vern">${sp.common_name || sp.taxonomy.family || 'Taxon validé'}</div>
-        <div class="obs-meta">${sp.place ? sp.place.split(',')[0] : 'Station'} • ${sp.last_observed || 'Non daté'}</div>
-      </div>
-    `;
-    fragment.appendChild(card);
+    const metaText = `${sp.place ? sp.place.split(',')[0] : 'Station'} • ${sp.last_observed || 'Non daté'}`;
+    const card = createUniversalGalleryCard(sp, metaText);
+    galleryGrid.appendChild(card);
   });
 
-  container.appendChild(fragment);
+  container.appendChild(galleryGrid);
 }
 
 // ========================================================
-// 3. MODULE 2 - ONGLET 2 : STATISTIQUES & PHÉNOLOGIE
+// 5. MODULE 2 - ONGLET 2 : STATISTIQUES & PHÉNOLOGIE
 // ========================================================
 function initStatsDashboard() {
   if (!globalSpeciesData) return;
@@ -883,7 +859,6 @@ function initStatsDashboard() {
   const strokeMod = (pctMod / 100) * circ;
   const strokeFreq = (pctFreq / 100) * circ;
 
-  // Top 5 Espèces
   const topSpeciesStars = [...trueSpeciesList]
     .sort((a,b) => (b.obs_count || 1) - (a.obs_count || 1))
     .slice(0, 5);
