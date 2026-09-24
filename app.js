@@ -501,13 +501,15 @@ function populateGeoMarkers() {
 
     const marker = L.marker([sp.coordinates.lat, sp.coordinates.lng], { icon: customIcon });
     marker.speciesData = sp;
+    
+    // Popup avec clic sur photo ou bouton pour retourner à la Super-Fiche
     marker.bindPopup(`
-      <img class="geo-pop-img" src="${sp.photo_url || ''}" alt="" />
+      <img class="geo-pop-img" src="${sp.photo_url || ''}" alt="" onclick='openSpeciesSheetFromId("${sp.id}")' title="Ouvrir la fiche de ${sp.scientific_name}" />
       <div class="geo-pop-body">
-        <div class="geo-pop-sci">${sp.scientific_name}</div>
+        <div class="geo-pop-sci" style="cursor:pointer;" onclick='openSpeciesSheetFromId("${sp.id}")'>${sp.scientific_name}</div>
         <div class="geo-pop-vern">${sp.common_name || sp.taxonomy.family || ''}</div>
-        <div style="font-size:0.7rem; color:#94a3b8; margin-top:0.3rem;">${sp.place || 'Station de relevé'}</div>
-        <button style="margin-top:0.4rem; padding:0.25rem 0.5rem; background:#38bdf8; border:none; border-radius:4px; font-weight:700; cursor:pointer;" onclick='openSpeciesSheetFromId("${sp.id}")'>Voir Fiche</button>
+        <div style="font-size:0.7rem; color:#94a3b8; margin-top:0.3rem;">${sp.place || 'Station de relevé'} • ${sp.last_observed || ''}</div>
+        <button style="margin-top:0.5rem; width:100%; padding:0.35rem 0.5rem; background:#38bdf8; border:none; border-radius:4px; font-weight:700; color:#03060a; cursor:pointer;" onclick='openSpeciesSheetFromId("${sp.id}")'>📖 Voir Fiche Espèce</button>
       </div>
     `);
 
@@ -966,7 +968,6 @@ function initStatsDashboard() {
   const grid = document.createElement('div');
   grid.className = 'stats-grid-2x2';
 
-  // Phénologie
   const phenoBox = document.createElement('div');
   phenoBox.className = 'stat-box';
   let phenoBarsHtml = '';
@@ -992,7 +993,6 @@ function initStatsDashboard() {
   `;
   grid.appendChild(phenoBox);
 
-  // Rareté
   const rarityBox = document.createElement('div');
   rarityBox.className = 'stat-box';
   rarityBox.innerHTML = `
@@ -1034,7 +1034,6 @@ function initStatsDashboard() {
   `;
   grid.appendChild(rarityBox);
 
-  // Espèces stars
   const podiumBox = document.createElement('div');
   podiumBox.className = 'stat-box';
   let podiumHtml = '';
@@ -1064,7 +1063,6 @@ function initStatsDashboard() {
   `;
   grid.appendChild(podiumBox);
 
-  // Pôles
   const biomeBox = document.createElement('div');
   biomeBox.className = 'stat-box';
   const insectCount = globalSpeciesData.filter(s => s.taxonomy.class === 'Insecta' && isSpeciesTerminal(s)).length;
@@ -1133,11 +1131,26 @@ function openSpeciesSheet(sp) {
   document.getElementById('sheetHeroVern').innerText = sp.common_name || sp.taxonomy.genus || 'Taxon validé';
   document.getElementById('sheetHeroRank').innerText = isSpeciesTerminal(sp) ? 'Espèce' : 'Taxon supérieur';
 
-  const iucnEl = document.getElementById('sheetHeroIucn');
+  // Badge UICN + Bouton Repère Carte 2D
+  const badgesRow = document.querySelector('.sheet-header-identity .sheet-badges-row');
+  const existingLocateBtn = document.getElementById('headerLocateBtn');
+  if (existingLocateBtn) existingLocateBtn.remove();
+
   const rawStatus = (sp.iucn_status || sp.conservation_status || 'LC').toUpperCase().trim();
   const iucnData = iucnDefinitions[rawStatus] || iucnDefinitions['LC'];
+  const iucnEl = document.getElementById('sheetHeroIucn');
   iucnEl.className = `sheet-iucn-badge ${iucnData.class}`;
   iucnEl.innerText = iucnData.label;
+
+  // Si des coordonnées GPS existent : injecte le bouton de localisation directe
+  if (sp.coordinates && sp.coordinates.lat && sp.coordinates.lng) {
+    const locateBtn = document.createElement('button');
+    locateBtn.id = 'headerLocateBtn';
+    locateBtn.className = 'btn-locate-map';
+    locateBtn.innerHTML = `📍 Localiser sur la carte 2D`;
+    locateBtn.onclick = () => locateSpeciesOnMap(sp);
+    badgesRow.appendChild(locateBtn);
+  }
 
   switchSheetTab(0);
 
@@ -1204,7 +1217,46 @@ function initOrUpdateWorldMap(sp) {
   }
 }
 
-// 7. MONOGRAPHIE STRUCTUREE AVEC FILTRAGE DU CONTENU CREUX
+// ========================================================
+// 7. TÉLÉPORTATION VERS LA CARTE 2D & CENTRAGE PRÉCIS
+// ========================================================
+function locateSpeciesOnMap(sp) {
+  if (!sp || !sp.coordinates || !sp.coordinates.lat || !sp.coordinates.lng) {
+    alert("Aucune coordonnée GPS enregistrée pour cette observation.");
+    return;
+  }
+
+  // 1. Fermer la fiche
+  closeSpeciesSheet();
+
+  // 2. Basculer sur le Module 1 et sur l'onglet Géographie 2D (index 1)
+  openModule('module1', false);
+  switchModuleTab('module1', 1, false);
+
+  // 3. Zoomer précisément sur l'emplacement et déployer la bulle
+  setTimeout(() => {
+    if (!geoMap) initGeoMapWorkspace();
+
+    const lat = sp.coordinates.lat;
+    const lng = sp.coordinates.lng;
+
+    // Centrage avec zoom précis de terrain (niveau 14)
+    geoMap.setView([lat, lng], 14, { animate: true });
+
+    // Recherche et ouverture du marker correspondant
+    if (clusterGroup) {
+      clusterGroup.eachLayer(layer => {
+        if (layer.speciesData && String(layer.speciesData.id) === String(sp.id)) {
+          clusterGroup.zoomToShowLayer(layer, () => {
+            layer.openPopup();
+          });
+        }
+      });
+    }
+  }, 250);
+}
+
+// 8. MONOGRAPHIE STRUCTUREE SANS TEXTE CREUX
 function fetchStructuredNaturalistMonograph(sp) {
   const contentEl = document.getElementById('sheetWikiContent');
   contentEl.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de l'observatoire naturaliste...`;
@@ -1419,10 +1471,15 @@ function populateTaxoLineage(sp) {
 
 function populateFieldData(sp) {
   const container = document.getElementById('sheetFieldData');
+  const hasGps = sp.coordinates && sp.coordinates.lat && sp.coordinates.lng;
+
   container.innerHTML = `
     <div class="sheet-info-card">
       <span class="sheet-info-lbl">Dernière station observée</span>
-      <span class="sheet-info-val">${sp.place || 'Station non géolocalisée'}</span>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.2rem;">
+        <span class="sheet-info-val">${sp.place || 'Station non géolocalisée'}</span>
+        ${hasGps ? `<button class="btn-locate-map" onclick="locateSpeciesOnMap(currentOpenSpecies)">📍 Voir sur carte</button>` : ''}
+      </div>
     </div>
     <div class="sheet-info-card">
       <span class="sheet-info-lbl">Date du relevé</span>
@@ -1431,7 +1488,7 @@ function populateFieldData(sp) {
     <div class="sheet-info-card">
       <span class="sheet-info-lbl">Coordonnées GPS</span>
       <span class="sheet-info-val" style="font-family:monospace; font-size:0.85rem;">
-        ${sp.coordinates && sp.coordinates.lat ? `${sp.coordinates.lat.toFixed(4)}°N,${sp.coordinates.lng.toFixed(4)}°E` : '—'}
+        ${hasGps ? `${sp.coordinates.lat.toFixed(4)}°N,${sp.coordinates.lng.toFixed(4)}°E` : '—'}
       </span>
     </div>
     <div class="sheet-info-card">
@@ -1472,14 +1529,13 @@ function populateRelatedSpecies(sp) {
 }
 
 // ========================================================
-// 8. SUPER-FICHE DE RANG SUPÉRIEUR (FAMILLE / ORDRE / GENRE)
+// 9. SUPER-FICHE DE RANG SUPÉRIEUR (FAMILLE / ORDRE / GENRE)
 // ========================================================
 function openTaxonSheet(rankKey, rankName) {
   if (!globalSpeciesData || !rankName) return;
 
   const overlay = document.getElementById('taxonSheetOverlay');
   
-  // Trouve toutes les espèces de ta collection appartenant à ce rang
   let matchingSpecies = globalSpeciesData.filter(s => {
     return s.taxonomy && s.taxonomy[rankKey] === rankName;
   });
@@ -1490,14 +1546,12 @@ function openTaxonSheet(rankKey, rankName) {
     });
   }
 
-  // Choisir la photo la plus qualitative (ou la plus observée) comme image d'affiche
   const representativeSp = matchingSpecies.find(s => s.photo_url) || matchingSpecies[0];
   const photoUrl = representativeSp ? representativeSp.photo_url : 'https://via.placeholder.com/900x900/080c14/475569?text=?';
 
   document.getElementById('taxonHeroImg').src = photoUrl;
   document.getElementById('taxonPhotoCredit').innerText = representativeSp ? `Spécimen illustré : ${representativeSp.scientific_name}` : 'Rang systématique';
 
-  // Métadonnées
   const rankLabels = {
     'kingdom': 'Règne',
     'phylum': 'Embranchement',
@@ -1515,7 +1569,6 @@ function openTaxonSheet(rankKey, rankName) {
   const totalObs = getTotalObservationsCount(matchingSpecies);
   document.getElementById('taxonStatsBadge').innerText = `${spCount} espèce(s) • ${totalObs} relevé(s)`;
 
-  // Génération de la notice naturaliste du rang
   const wikiBox = document.getElementById('taxonWikiContent');
   wikiBox.innerHTML = `<span class="sheet-loading-spinner"></span> Consultation de la notice du groupe...`;
 
@@ -1529,7 +1582,6 @@ function openTaxonSheet(rankKey, rankName) {
     }
   });
 
-  // Mosaïque des espèces de ce rang
   document.getElementById('taxonSpeciesGridTitle').innerText = `Toutes vos espèces de ${rankLabels[rankKey] || 'ce taxon'} (${matchingSpecies.length})`;
   const grid = document.getElementById('taxonSpeciesGrid');
   grid.innerHTML = '';
@@ -1546,7 +1598,7 @@ function closeTaxonSheet() {
 }
 
 // ========================================================
-// 9. CLICHÉS PERSONNELS VERROUILLÉS SUR TON COMPTE INATURALIST "ZANSKAR"
+// 10. CLICHÉS PERSONNELS VERROUILLÉS SUR TON COMPTE INATURALIST "ZANSKAR"
 // ========================================================
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
