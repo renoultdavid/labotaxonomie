@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Observatoire du Vivant • Laboratoire Taxonomique</title>
+  
+  <!-- Leaflet Core & MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+  <!-- Leaflet & MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
   <style>
     :root {
       --bg-deep: #05070b;
@@ -100,7 +110,6 @@
         rgba(5, 7, 11, 0.98) 100%
       );
       z-index: 2;
-      transition: background 0.35s ease;
     }
 
     .pane-content {
@@ -163,7 +172,6 @@
       justify-content: center;
       flex-shrink: 0;
       color: #fff;
-      transition: transform 0.2s ease, background 0.2s ease;
       box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
     }
 
@@ -183,9 +191,7 @@
       animation: pulseWave 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
     }
 
-    #pane2 .pulse-btn::before {
-      border-color: var(--accent-emerald);
-    }
+    #pane2 .pulse-btn::before { border-color: var(--accent-emerald); }
 
     @keyframes pulseWave {
       0% { transform: scale(0.9); opacity: 0.85; }
@@ -220,7 +226,6 @@
       color: #fff;
       backdrop-filter: blur(10px);
       width: fit-content;
-      transition: all 0.25s ease;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     }
 
@@ -234,7 +239,7 @@
     }
 
     /* ========================================================
-       MODULES PLEINE PAGE
+       STRUCTURE GÉNÉRALE DES MODULES
        ======================================================== */
     .app-module {
       position: absolute;
@@ -284,7 +289,6 @@
       font-size: 0.825rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s, border-color 0.2s;
     }
 
     .btn-back-home:hover {
@@ -316,7 +320,6 @@
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
     }
 
     .tab-btn:hover { color: #fff; }
@@ -348,7 +351,7 @@
     .module-view.active { display: flex; }
 
     /* ========================================================
-       MODULE 1 - ONGLET 1 : RECHERCHE EXPERT CLADISTIQUE
+       MODULE 1 - ONGLET 1 : RECHERCHE EXPERT
        ======================================================== */
     .expert-workspace {
       flex: 1;
@@ -380,15 +383,13 @@
       background: #05070c;
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 0.5rem 0.75rem;
+      padding: 0.55rem 0.75rem;
       color: var(--text-main);
-      font-size: 0.825rem;
+      font-size: 0.85rem;
       outline: none;
     }
 
-    .tree-search-input:focus {
-      border-color: var(--border-focus);
-    }
+    .tree-search-input:focus { border-color: var(--border-focus); }
 
     .tree-stats-row {
       display: flex;
@@ -405,9 +406,7 @@
       font-size: 0.825rem;
     }
 
-    .taxo-node {
-      margin-bottom: 0.15rem;
-    }
+    .taxo-node { margin-bottom: 0.15rem; }
 
     .taxo-label {
       display: flex;
@@ -417,19 +416,10 @@
       border-radius: 6px;
       cursor: pointer;
       user-select: none;
-      transition: background 0.15s, color 0.15s;
     }
 
-    .taxo-label:hover {
-      background: rgba(255, 255, 255, 0.04);
-      color: #fff;
-    }
-
-    .taxo-label.active {
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--accent-cyan);
-      font-weight: 600;
-    }
+    .taxo-label:hover { background: rgba(255, 255, 255, 0.04); color: #fff; }
+    .taxo-label.active { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); font-weight: 600; }
 
     .taxo-names {
       display: flex;
@@ -440,16 +430,8 @@
       white-space: nowrap;
     }
 
-    .taxo-latin {
-      font-style: italic;
-      font-weight: 600;
-    }
-
-    .taxo-vern {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      font-style: normal;
-    }
+    .taxo-latin { font-style: italic; font-weight: 600; }
+    .taxo-vern { font-size: 0.75rem; color: var(--text-dim); font-style: normal; }
 
     .taxo-badge {
       font-size: 0.7rem;
@@ -469,11 +451,8 @@
       display: none;
     }
 
-    .taxo-children.open {
-      display: block;
-    }
+    .taxo-children.open { display: block; }
 
-    /* Volet droit : Résultats d'espèces */
     .expert-results-pane {
       flex: 1;
       display: flex;
@@ -518,92 +497,12 @@
       color: var(--accent-cyan);
     }
 
-    /* Conteneur dynamique (Liste vs Galerie) */
     .results-content-wrap {
       flex: 1;
       overflow-y: auto;
       padding: 1rem 1.25rem;
     }
 
-    /* 1. Mode Liste */
-    .results-list-mode {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .species-row {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.6rem 0.85rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s, transform 0.1s;
-    }
-
-    .species-row:hover {
-      background: var(--card-hover);
-      border-color: var(--accent-cyan);
-      transform: translateX(3px);
-    }
-
-    .species-left {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      overflow: hidden;
-    }
-
-    .species-mini-thumb {
-      width: 44px;
-      height: 44px;
-      border-radius: 6px;
-      background: #020408;
-      object-fit: cover;
-      border: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    .species-text {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-      overflow: hidden;
-    }
-
-    .species-latin {
-      font-style: italic;
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .species-vernacular {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .btn-open-fiche {
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      color: var(--accent-cyan);
-      padding: 0.35rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
-
-    /* 2. Mode Galerie Miniatures */
     .results-gallery-mode {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -674,6 +573,222 @@
       text-overflow: ellipsis;
     }
 
+    .results-list-mode {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .species-row {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .species-row:hover {
+      background: var(--card-hover);
+      border-color: var(--accent-cyan);
+    }
+
+    .species-left {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      overflow: hidden;
+    }
+
+    .species-mini-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      background: #020408;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .species-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      overflow: hidden;
+    }
+
+    .species-latin {
+      font-style: italic;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .species-vernacular {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-open-fiche {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--accent-cyan);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    /* ========================================================
+       MODULE 1 - ONGLET 2 : RECHERCHE GÉOGRAPHIQUE 2D (50/50)
+       ======================================================== */
+    .geo-workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .geo-header-controls {
+      background: #090e17;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.6rem 1rem;
+      flex-shrink: 0;
+    }
+
+    .geo-search-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .geo-search-input {
+      flex: 1;
+      background: #05070c;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .geo-search-input:focus { border-color: var(--border-focus); }
+
+    .geo-toolbar {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+      overflow-x: auto;
+      padding-bottom: 0.2rem;
+    }
+
+    .geo-filter-pill {
+      background: #101623;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 0.3rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.725rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .geo-filter-pill.active {
+      border-color: currentColor;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .geo-body-split {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .geo-map-pane {
+      flex: 1;
+      position: relative;
+      background: #03060a;
+      border-right: 1px solid var(--border);
+    }
+
+    #geoMapLeaflet { width: 100%; height: 100%; }
+
+    .geo-results-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #06080e;
+      overflow: hidden;
+    }
+
+    .geo-subbar {
+      height: 44px;
+      background: #090e17;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      font-size: 0.8rem;
+    }
+
+    .geo-cards-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .geo-marker-pin {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.85);
+      border: 1.5px solid #fff;
+      color: #fff;
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: #090e17 !important;
+      color: #fff !important;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0;
+      overflow: hidden;
+    }
+    .leaflet-popup-content { margin: 0 !important; width: 220px !important; }
+    .geo-pop-img { width: 100%; height: 110px; object-fit: cover; display: block; }
+    .geo-pop-body { padding: 0.65rem; }
+    .geo-pop-sci { font-style: italic; font-weight: 700; font-size: 0.825rem; color: #fff; }
+    .geo-pop-vern { font-size: 0.725rem; color: var(--accent-cyan); margin-top: 0.15rem; }
+
     .view-placeholder {
       display: flex;
       flex-direction: column;
@@ -685,34 +800,24 @@
       text-align: center;
     }
 
-    .view-placeholder h3 {
-      font-size: 1.3rem;
-      color: var(--text-muted);
-      font-weight: 600;
-    }
-
-    .view-placeholder p {
-      max-width: 480px;
-      font-size: 0.85rem;
-      line-height: 1.55;
-    }
+    .view-placeholder h3 { font-size: 1.3rem; color: var(--text-muted); font-weight: 600; }
+    .view-placeholder p { max-width: 480px; font-size: 0.85rem; line-height: 1.55; }
 
     @media (max-width: 900px) {
       #homeScreen { flex-direction: column; }
-      .home-pane {
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-        padding: 2rem;
-      }
-      .pane-title { font-size: 1.8rem; }
+      .home-pane { border-right: none; border-bottom: 1px solid var(--border); padding: 2rem; }
       .expert-workspace { flex-direction: column; }
       .expert-tree-pane { width: 100%; height: 42%; }
+      .geo-body-split { flex-direction: column; }
+      .geo-map-pane { height: 50%; border-right: none; border-bottom: 1px solid var(--border); }
     }
   </style>
 </head>
 <body>
 
-  <!-- ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF -->
+  <!-- ========================================================
+       ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF
+       ======================================================== -->
   <div id="homeScreen">
     
     <!-- Volet 1 : Recherche d'Espèce -->
@@ -757,7 +862,9 @@
 
   </div>
 
-  <!-- MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS) -->
+  <!-- ========================================================
+       MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS)
+       ======================================================== -->
   <div class="app-module" id="module1">
     <div class="module-topbar">
       <div class="module-nav-left">
@@ -773,49 +880,81 @@
     </div>
 
     <div class="module-view-stack">
-      <!-- Vue 1.1 : Recherche Expert Cladistique Active -->
+      
+      <!-- Vue 1.1 : Recherche Expert Cladistique -->
       <div class="module-view active" id="view1-0">
         <div class="expert-workspace">
           
-          <!-- Volet gauche de l'arbre cladistique complet -->
           <div class="expert-tree-pane">
             <div class="tree-filter-bar">
-              <input type="text" id="expertTreeSearch" class="tree-search-input" placeholder="Rechercher (latin, français, famille, genre)..." />
+              <input type="text" id="expertTreeSearch" class="tree-search-input" placeholder="Tapez Ophrys, Ophrys miroir, Papilio, etc..." />
               <div class="tree-stats-row">
                 <span id="treeStatusLabel">Arbre complet (Règne à Espèce)</span>
                 <span id="treeTotalCount" style="color: var(--accent-cyan); font-weight: 700;">—</span>
               </div>
             </div>
-            <div class="expert-tree-scroll" id="expertTreeContainer">
-              <!-- Nœuds construits dynamiquement jusqu'à l'espèce -->
-            </div>
+            <div class="expert-tree-scroll" id="expertTreeContainer"></div>
           </div>
 
-          <!-- Volet droit des espèces associées -->
           <div class="expert-results-pane">
             <div class="results-subbar">
               <div id="resultsFilterTitle" style="color: var(--text-muted); font-weight: 600;">Sélectionnez une branche dans l'arbre</div>
               <div style="display: flex; gap: 0.75rem; align-items: center;">
                 <span id="resultsCountBadge" style="color: var(--text-dim); font-size: 0.75rem;">0 espèce</span>
                 <div class="view-switchers">
-                  <button class="btn-view-toggle active" id="btnViewList" onclick="setResultsViewMode('list')">≡ Liste</button>
-                  <button class="btn-view-toggle" id="btnViewGallery" onclick="setResultsViewMode('gallery')">⊞ Galerie</button>
+                  <button class="btn-view-toggle active" id="btnViewGallery" onclick="setResultsViewMode('gallery')">⊞ Galerie</button>
+                  <button class="btn-view-toggle" id="btnViewList" onclick="setResultsViewMode('list')">≡ Liste</button>
                 </div>
               </div>
             </div>
-            <div class="results-content-wrap" id="expertResultsWrapper">
-              <!-- Rendu dynamique Liste ou Galerie sans tag Drive -->
-            </div>
+            <div class="results-content-wrap" id="expertResultsWrapper"></div>
           </div>
 
         </div>
       </div>
 
-      <!-- Vue 1.2 : Géographie 2D -->
+      <!-- Vue 1.2 : Recherche Géographique 2D (50/50 Clusters) -->
       <div class="module-view" id="view1-1">
-        <div class="view-placeholder">
-          <h3>Onglet 2 : Recherche Géographique 2D</h3>
-          <p>Carte interactive par clusters colorés (mammifères, oiseaux, insectes...) scindée avec les vignettes d'espèces.</p>
+        <div class="geo-workspace">
+          
+          <div class="geo-header-controls">
+            <!-- Barre de recherche géographique libre -->
+            <div class="geo-search-bar">
+              <input type="text" id="geoFreeSearch" class="geo-search-input" placeholder="Filtrer la carte par nom, famille ou groupe (ex: éponge, Ophrys, Cetacea, Aigle)..." />
+              <button id="geoResetSearchBtn" class="btn-back-home" style="padding: 0.45rem 0.75rem;">Effacer</button>
+            </div>
+
+            <!-- Filtres par icônes enrichis -->
+            <div class="geo-toolbar" id="geoToolbar">
+              <button class="geo-filter-pill active" data-group="all">✨ Tous les groupes</button>
+              <button class="geo-filter-pill active" data-group="Aves" style="color: #38bdf8;">🦅 Oiseaux</button>
+              <button class="geo-filter-pill active" data-group="Lepidoptera" style="color: #ec4899;">🦋 Papillons</button>
+              <button class="geo-filter-pill active" data-group="Coleoptera" style="color: #eab308;">🪲 Coléoptères</button>
+              <button class="geo-filter-pill active" data-group="Araneae" style="color: #a855f7;">🕷️ Araignées</button>
+              <button class="geo-filter-pill active" data-group="Reptilia" style="color: #10b981;">🦎 Reptiles</button>
+              <button class="geo-filter-pill active" data-group="Amphibia" style="color: #34d399;">🐸 Amphibiens</button>
+              <button class="geo-filter-pill active" data-group="Mammalia" style="color: #f97316;">🐾 Mammifères</button>
+              <button class="geo-filter-pill active" data-group="Fish" style="color: #06b6d4;">🐟 Poissons</button>
+              <button class="geo-filter-pill active" data-group="Plantae" style="color: #84cc16;">🌿 Flore</button>
+              <button class="geo-filter-pill active" data-group="Fungi" style="color: #d97706;">🍄 Champignons</button>
+              <button class="geo-filter-pill active" data-group="Other" style="color: #818cf8;">🔬 Autres taxons</button>
+            </div>
+          </div>
+
+          <div class="geo-body-split">
+            <div class="geo-map-pane">
+              <div id="geoMapLeaflet"></div>
+            </div>
+
+            <div class="geo-results-pane">
+              <div class="geo-subbar">
+                <span id="geoVisibleTitle" style="color: var(--text-muted); font-weight: 600;">Espèces dans la zone visible</span>
+                <span id="geoVisibleCount" style="color: var(--accent-cyan); font-weight: 700; font-size: 0.75rem;">0 espèce</span>
+              </div>
+              <div class="geo-cards-scroll" id="geoCardsContainer"></div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -823,9 +962,10 @@
       <div class="module-view" id="view1-2">
         <div class="view-placeholder">
           <h3>Onglet 3 : Recherche par Images</h3>
-          <p>Navigation simplifiée par grands groupes illustrés pour les débutants (Mammifères → Félins...).</p>
+          <p>Exploration visuelle par grands groupes illustrés pour les débutants (Mammifères → Félins...).</p>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -850,7 +990,6 @@
           <p>Ensemble des observations de terrain avec tri chronologique et alphabétique.</p>
         </div>
       </div>
-
       <div class="module-view" id="view2-1">
         <div class="view-placeholder">
           <h3>Onglet 2 : Statistiques & Analyses</h3>
@@ -864,28 +1003,59 @@
     let globalSpeciesData = null;
     let expertCurrentSelection = { rank: null, value: null };
     let currentResultsList = [];
-    let resultsViewMode = 'list'; // 'list' ou 'gallery'
+    let resultsViewMode = 'gallery';
 
+    // Dictionnaire enrichi avec les éponges, cnidaires et groupes variés
     const vernMap = {
       'Animalia': 'Animaux',
-      'Plantae': 'Végétaux',
+      'Plantae': 'Végétaux / Plantes',
       'Fungi': 'Champignons',
       'Arthropoda': 'Arthropodes',
-      'Chordata': 'Chordés',
+      'Chordata': 'Chordés / Vertébrés',
       'Mollusca': 'Mollusques',
+      'Annelida': 'Vers annelés',
+      'Cnidaria': 'Méduses, Anémones & Coraux',
+      'Echinodermata': 'Oursins & Étoiles de mer',
+      'Porifera': 'Éponges',
+      'Bryozoa': 'Bryozoaires',
+      
       'Insecta': 'Insectes',
       'Arachnida': 'Arachnides',
       'Aves': 'Oiseaux',
       'Mammalia': 'Mammifères',
       'Reptilia': 'Reptiles',
       'Amphibia': 'Amphibiens',
+      'Actinopterygii': 'Poissons osseux',
+      'Elasmobranchii': 'Requins & Raies',
+      'Malacostraca': 'Crustacés',
+      'Gastropoda': 'Escargots & Limaces',
+      'Bivalvia': 'Bivalves',
+      
       'Lepidoptera': 'Papillons',
       'Coleoptera': 'Coléoptères',
       'Araneae': 'Araignées',
       'Odonata': 'Libellules & Demoiselles',
       'Hymenoptera': 'Abeilles, Guêpes & Fourmis',
       'Diptera': 'Mouches & Moustiques',
-      'Hemiptera': 'Punaises & Cigales'
+      'Hemiptera': 'Punaises & Cigales',
+      'Orthoptera': 'Criquets, Sauterelles & Grillons',
+      'Mantodea': 'Mantes',
+      'Phasmida': 'Phasmes',
+      'Mytilida': 'Moules',
+      'Pectinida': 'Pectens & Coquilles',
+      'Venerida': 'Palourdes & Praires',
+      'Passeriformes': 'Passereaux',
+      'Falconiformes': 'Faucons',
+      'Accipitriformes': 'Rapaces diurnes',
+      'Carnivora': 'Carnivores',
+      'Rodentia': 'Rongeurs',
+      'Chiroptera': 'Chauves-souris',
+      'Cetacea': 'Cétacés (Baleines & Dauphins)',
+      'Squamata': 'Lézards & Serpents',
+      'Testudines': 'Tortues',
+      'Anura': 'Grenouilles & Crapauds',
+      'Urodela': 'Salamandres & Tritons',
+      'Orchidaceae': 'Orchidées'
     };
 
     fetch('data.json')
@@ -913,17 +1083,25 @@
       tabs.forEach((tab, idx) => tab.classList.toggle('active', idx === tabIndex));
       const views = module.querySelectorAll('.module-view');
       views.forEach((view, idx) => view.classList.toggle('active', idx === tabIndex));
+
+      if (moduleId === 'module1' && tabIndex === 1) {
+        setTimeout(initGeoMapWorkspace, 50);
+      }
+    }
+
+    // Fonction utilitaire de nettoyage de chaîne (insensible aux accents et minuscules)
+    function normalizeStr(str) {
+      return (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     }
 
     // ========================================================
-    // ARBRE EXPERT EN PROFONDEUR : RÈGNE JUSQU'À L'ESPÈCE
+    // ONGLET 1 : ARBRE EXPERT ET MOTEUR DE RECHERCHE RESTREINT
     // ========================================================
     function initDeepExpertTree() {
       if (!globalSpeciesData) return;
       const treeContainer = document.getElementById('expertTreeContainer');
       treeContainer.innerHTML = '';
 
-      // Compteurs au niveau Règne
       const kingdoms = {};
       globalSpeciesData.forEach(sp => {
         const k = sp.taxonomy.kingdom || 'Incertae sedis';
@@ -931,7 +1109,6 @@
       });
 
       const fragment = document.createDocumentFragment();
-
       Object.keys(kingdoms).sort().forEach(k => {
         const node = createDynamicNode('kingdom', k, kingdoms[k], { kingdom: k });
         fragment.appendChild(node);
@@ -941,7 +1118,6 @@
       renderExpertResults(null, null);
     }
 
-    // Création paresseuse des nœuds pour soulager le CPU sur iPad
     function createDynamicNode(rank, name, count, pathContext) {
       const div = document.createElement('div');
       div.className = 'taxo-node';
@@ -951,7 +1127,7 @@
       label.innerHTML = `
         <div class="taxo-names">
           <span class="taxo-latin">${name}</span>
-          <span class="taxo-vern">${vernMap[name] || ''}</span>
+          <span class="taxo-vern">${vernMap[name] ? '— ' + vernMap[name] : ''}</span>
         </div>
         <span class="taxo-badge">${count}</span>
       `;
@@ -963,17 +1139,15 @@
       label.onclick = (e) => {
         e.stopPropagation();
         highlightLabel(label);
+        document.getElementById('expertTreeSearch').value = '';
         renderExpertResults(rank, name, pathContext);
 
-        // Si c'est l'espèce, on ne descend plus
         if (rank === 'species') return;
 
-        // Chargement à la demande de l'étage suivant
         if (!isLoaded) {
           loadNextRankChildren(rank, pathContext, children);
           isLoaded = true;
         }
-
         children.classList.toggle('open');
       };
 
@@ -988,22 +1162,15 @@
       if (nextIdx >= rankOrder.length) return;
       const nextRank = rankOrder[nextIdx];
 
-      // Filtrer les spécimens sous le contexte parent
       let scoped = globalSpeciesData;
       for (const k in pathContext) {
         if (k === 'species') scoped = scoped.filter(s => s.scientific_name === pathContext[k]);
         else scoped = scoped.filter(s => s.taxonomy[k] === pathContext[k]);
       }
 
-      // Regrouper par le rang suivant
       const groups = {};
       scoped.forEach(sp => {
-        let val = '';
-        if (nextRank === 'species') {
-          val = sp.scientific_name;
-        } else {
-          val = sp.taxonomy[nextRank] || `${nextRank} indét.`;
-        }
+        let val = (nextRank === 'species') ? sp.scientific_name : (sp.taxonomy[nextRank] || `${nextRank} indét.`);
         groups[val] = (groups[val] || 0) + 1;
       });
 
@@ -1022,13 +1189,10 @@
       labelEl.classList.add('active');
     }
 
-    // ========================================================
-    // AFFICHAGE DES RÉSULTATS (LISTE OU GALERIE)
-    // ========================================================
     function setResultsViewMode(mode) {
       resultsViewMode = mode;
-      document.getElementById('btnViewList').classList.toggle('active', mode === 'list');
       document.getElementById('btnViewGallery').classList.toggle('active', mode === 'gallery');
+      document.getElementById('btnViewList').classList.toggle('active', mode === 'list');
       renderResultsDOM();
     }
 
@@ -1065,7 +1229,29 @@
       const slice = currentResultsList.slice(0, 100);
       const fragment = document.createDocumentFragment();
 
-      if (resultsViewMode === 'list') {
+      if (resultsViewMode === 'gallery') {
+        const galleryDiv = document.createElement('div');
+        galleryDiv.className = 'results-gallery-mode';
+
+        slice.forEach(sp => {
+          const card = document.createElement('div');
+          card.className = 'gallery-card';
+          card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
+
+          const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
+
+          card.innerHTML = `
+            <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
+            <div class="gallery-overlay"></div>
+            <div class="gallery-text">
+              <span class="gallery-latin">${sp.scientific_name}</span>
+              <span class="gallery-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
+            </div>
+          `;
+          galleryDiv.appendChild(card);
+        });
+        fragment.appendChild(galleryDiv);
+      } else {
         const listDiv = document.createElement('div');
         listDiv.className = 'results-list-mode';
 
@@ -1089,58 +1275,231 @@
           listDiv.appendChild(row);
         });
         fragment.appendChild(listDiv);
-      } else {
-        // Mode Galerie Miniatures
-        const galleryDiv = document.createElement('div');
-        galleryDiv.className = 'results-gallery-mode';
-
-        slice.forEach(sp => {
-          const card = document.createElement('div');
-          card.className = 'gallery-card';
-          card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
-
-          const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
-
-          card.innerHTML = `
-            <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-            <div class="gallery-overlay"></div>
-            <div class="gallery-text">
-              <span class="gallery-latin">${sp.scientific_name}</span>
-              <span class="gallery-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
-            </div>
-          `;
-          galleryDiv.appendChild(card);
-        });
-        fragment.appendChild(galleryDiv);
       }
 
       container.appendChild(fragment);
       container.scrollTop = 0;
     }
 
-    // Moteur de recherche globale dans l'arbre expert
+    // Moteur de recherche expert instantané & progressif
     document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase().trim();
       if (!globalSpeciesData) return;
+      const rawTokens = normalizeStr(e.target.value).split(/\s+/).filter(Boolean);
 
-      if (!q) {
+      if (rawTokens.length === 0) {
         renderExpertResults(null, null);
         return;
       }
 
       currentResultsList = globalSpeciesData.filter(sp => {
-        const sci = sp.scientific_name.toLowerCase();
-        const vern = (sp.common_name || '').toLowerCase();
-        const gen = (sp.taxonomy.genus || '').toLowerCase();
-        const fam = (sp.taxonomy.family || '').toLowerCase();
-        const ord = (sp.taxonomy.order || '').toLowerCase();
-        return sci.includes(q) || vern.includes(q) || gen.includes(q) || fam.includes(q) || ord.includes(q);
+        const fullSearchable = normalizeStr(`${sp.scientific_name} ${sp.common_name || ''} ${sp.taxonomy.genus || ''} ${sp.taxonomy.family || ''} ${sp.taxonomy.order || ''}`);
+        return rawTokens.every(tok => fullSearchable.includes(tok));
       });
 
-      document.getElementById('resultsFilterTitle').innerText = `Recherche : "${q}"`;
+      document.getElementById('resultsFilterTitle').innerText = `Recherche : "${e.target.value}"`;
       document.getElementById('resultsCountBadge').innerText = `${currentResultsList.length.toLocaleString('fr-FR')} résultat(s)`;
       renderResultsDOM();
     });
+
+    // ========================================================
+    // ONGLET 2 : RECHERCHE GÉOGRAPHIQUE 2D (CLUSTERS & RECHERCHE)
+    // ========================================================
+    let geoMap = null;
+    let clusterGroup = null;
+    let activeGeoGroups = new Set(['all', 'Aves', 'Lepidoptera', 'Coleoptera', 'Araneae', 'Reptilia', 'Amphibia', 'Mammalia', 'Fish', 'Plantae', 'Fungi', 'Other']);
+    let geoSearchFilterText = '';
+
+    const groupMeta = {
+      'Aves': { icon: '🦅', color: '#38bdf8', match: sp => sp.taxonomy.class === 'Aves' },
+      'Lepidoptera': { icon: '🦋', color: '#ec4899', match: sp => sp.taxonomy.order === 'Lepidoptera' },
+      'Coleoptera': { icon: '🪲', color: '#eab308', match: sp => sp.taxonomy.order === 'Coleoptera' },
+      'Araneae': { icon: '🕷️', color: '#a855f7', match: sp => sp.taxonomy.order === 'Araneae' },
+      'Reptilia': { icon: '🦎', color: '#10b981', match: sp => sp.taxonomy.class === 'Reptilia' },
+      'Amphibia': { icon: '🐸', color: '#34d399', match: sp => sp.taxonomy.class === 'Amphibia' },
+      'Mammalia': { icon: '🐾', color: '#f97316', match: sp => sp.taxonomy.class === 'Mammalia' },
+      'Fish': { icon: '🐟', color: '#06b6d4', match: sp => ['Actinopterygii', 'Elasmobranchii', 'Chondrichthyes'].includes(sp.taxonomy.class) },
+      'Plantae': { icon: '🌿', color: '#84cc16', match: sp => sp.taxonomy.kingdom === 'Plantae' },
+      'Fungi': { icon: '🍄', color: '#d97706', match: sp => sp.taxonomy.kingdom === 'Fungi' },
+      'Other': { icon: '🔬', color: '#818cf8', match: () => true } // Catégorie universelle (Éponges, vers, cnidaires...)
+    };
+
+    function getSpeciesGroupKey(sp) {
+      for (const key in groupMeta) {
+        if (key !== 'Other' && groupMeta[key].match(sp)) return key;
+      }
+      return 'Other';
+    }
+
+    function initGeoMapWorkspace() {
+      if (!geoMap) {
+        geoMap = L.map('geoMapLeaflet').setView([42.5, 9.3], 5);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles &copy; Esri',
+          maxZoom: 18
+        }).addTo(geoMap);
+
+        clusterGroup = L.markerClusterGroup({
+          chunkedLoading: true,
+          spiderfyOnMaxZoom: true,
+          showCoverageOnHover: false,
+          zoomToBoundsOnClick: true,
+          maxClusterRadius: 45
+        });
+        geoMap.addLayer(clusterGroup);
+
+        geoMap.on('moveend', syncGeoRightPane);
+
+        // Gestion des boutons de filtres tactiles
+        document.querySelectorAll('.geo-filter-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const grp = btn.dataset.group;
+            if (grp === 'all') {
+              const shouldActivateAll = !btn.classList.contains('active');
+              document.querySelectorAll('.geo-filter-pill').forEach(b => b.classList.toggle('active', shouldActivateAll));
+              if (shouldActivateAll) {
+                activeGeoGroups = new Set(['all', 'Aves', 'Lepidoptera', 'Coleoptera', 'Araneae', 'Reptilia', 'Amphibia', 'Mammalia', 'Fish', 'Plantae', 'Fungi', 'Other']);
+              } else {
+                activeGeoGroups.clear();
+              }
+            } else {
+              btn.classList.toggle('active');
+              if (btn.classList.contains('active')) activeGeoGroups.add(grp);
+              else {
+                activeGeoGroups.delete(grp);
+                document.querySelector('[data-group="all"]').classList.remove('active');
+              }
+            }
+            populateGeoMarkers();
+          });
+        });
+
+        // Barre de recherche libre sur la carte
+        const searchInput = document.getElementById('geoFreeSearch');
+        searchInput.addEventListener('input', (e) => {
+          geoSearchFilterText = normalizeStr(e.target.value);
+          populateGeoMarkers();
+        });
+
+        document.getElementById('geoResetSearchBtn').addEventListener('click', () => {
+          searchInput.value = '';
+          geoSearchFilterText = '';
+          populateGeoMarkers();
+        });
+      }
+
+      geoMap.invalidateSize();
+      populateGeoMarkers();
+    }
+
+    function populateGeoMarkers() {
+      if (!globalSpeciesData || !clusterGroup) return;
+      clusterGroup.clearLayers();
+
+      const markers = [];
+      const searchTokens = geoSearchFilterText.split(/\s+/).filter(Boolean);
+
+      globalSpeciesData.forEach(sp => {
+        if (!sp.coordinates || !sp.coordinates.lat || !sp.coordinates.lng) return;
+
+        const gKey = getSpeciesGroupKey(sp);
+        if (!activeGeoGroups.has('all') && !activeGeoGroups.has(gKey)) return;
+
+        // Filtre texte libre sur la carte (ex: "éponge" trouvera Porifera ou le nom commun)
+        if (searchTokens.length > 0) {
+          const searchable = normalizeStr(`${sp.scientific_name} ${sp.common_name || ''} ${sp.taxonomy.phylum || ''} ${sp.taxonomy.family || ''} ${sp.taxonomy.class || ''} ${sp.taxonomy.kingdom || ''}`);
+          const matchAll = searchTokens.every(tok => {
+            if (tok === 'eponge' || tok === 'eponges') return searchable.includes('porifera') || searchable.includes('eponge');
+            return searchable.includes(tok);
+          });
+          if (!matchAll) return;
+        }
+
+        const meta = groupMeta[gKey] || groupMeta['Other'];
+
+        const customIcon = L.divIcon({
+          className: 'geo-custom-pin',
+          html: `<div class="geo-marker-pin" style="background:${meta.color};">${meta.icon}</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+
+        const marker = L.marker([sp.coordinates.lat, sp.coordinates.lng], { icon: customIcon });
+        marker.speciesData = sp;
+
+        marker.bindPopup(`
+          <img class="geo-pop-img" src="${sp.photo_url || ''}" alt="" />
+          <div class="geo-pop-body">
+            <div class="geo-pop-sci">${sp.scientific_name}</div>
+            <div class="geo-pop-vern">${sp.common_name || sp.taxonomy.family || ''}</div>
+            <div style="font-size:0.7rem; color:#94a3b8; margin-top:0.3rem;">${sp.place || 'Station de relevé'}</div>
+          </div>
+        `);
+
+        markers.push(marker);
+      });
+
+      clusterGroup.addLayers(markers);
+      syncGeoRightPane();
+    }
+
+    function syncGeoRightPane() {
+      if (!geoMap || !globalSpeciesData) return;
+      const bounds = geoMap.getBounds();
+      const searchTokens = geoSearchFilterText.split(/\s+/).filter(Boolean);
+
+      const visibleSpecies = [];
+      const seenIds = new Set();
+
+      globalSpeciesData.forEach(sp => {
+        if (!sp.coordinates || !sp.coordinates.lat || !sp.coordinates.lng) return;
+        const gKey = getSpeciesGroupKey(sp);
+        if (!activeGeoGroups.has('all') && !activeGeoGroups.has(gKey)) return;
+
+        if (searchTokens.length > 0) {
+          const searchable = normalizeStr(`${sp.scientific_name} ${sp.common_name || ''} ${sp.taxonomy.phylum || ''} ${sp.taxonomy.family || ''} ${sp.taxonomy.class || ''} ${sp.taxonomy.kingdom || ''}`);
+          const matchAll = searchTokens.every(tok => {
+            if (tok === 'eponge' || tok === 'eponges') return searchable.includes('porifera') || searchable.includes('eponge');
+            return searchable.includes(tok);
+          });
+          if (!matchAll) return;
+        }
+
+        if (bounds.contains([sp.coordinates.lat, sp.coordinates.lng])) {
+          if (!seenIds.has(sp.id)) {
+            seenIds.add(sp.id);
+            visibleSpecies.push(sp);
+          }
+        }
+      });
+
+      document.getElementById('geoVisibleCount').innerText = `${visibleSpecies.length.toLocaleString('fr-FR')} espèce(s)`;
+
+      const container = document.getElementById('geoCardsContainer');
+      container.innerHTML = '';
+
+      const slice = visibleSpecies.slice(0, 80);
+      const fragment = document.createDocumentFragment();
+
+      slice.forEach(sp => {
+        const card = document.createElement('div');
+        card.className = 'gallery-card';
+        card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
+
+        const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
+
+        card.innerHTML = `
+          <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
+          <div class="gallery-overlay"></div>
+          <div class="gallery-text">
+            <span class="gallery-latin">${sp.scientific_name}</span>
+            <span class="gallery-vern">${sp.common_name || sp.place || ''}</span>
+          </div>
+        `;
+        fragment.appendChild(card);
+      });
+
+      container.appendChild(fragment);
+    }
   </script>
 </body>
 </html>
