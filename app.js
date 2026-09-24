@@ -1186,7 +1186,6 @@ function closeSpeciesSheet() {
   const mod1Active = document.getElementById('module1').classList.contains('active');
   const mod2Active = document.getElementById('module2').classList.contains('active');
   if (mod1Active) {
-    // Si on est déjà sur l'onglet géographie 2D, conserver le hash sur la carte
     const isGeoActive = document.getElementById('view1-1').classList.contains('active');
     updateURLHash('module1', isGeoActive ? 1 : 0);
   } else if (mod2Active) {
@@ -1241,7 +1240,7 @@ function initOrUpdateWorldMap(sp) {
 }
 
 // ========================================================
-// 7. TÉLÉPORTATION CARTOGRAPHIQUE AVEC DÉCLUSTERING FORCÉ
+// 7. TÉLÉPORTATION CORRIGÉE (ROBUSTE MODULE 1 & MODULE 2)
 // ========================================================
 function locateSpeciesOnMap(sp) {
   if (!sp || !sp.coordinates || !sp.coordinates.lat || !sp.coordinates.lng) {
@@ -1249,27 +1248,34 @@ function locateSpeciesOnMap(sp) {
     return;
   }
 
-  // 1. Fermer les fiches superposées SANS déclencher de redirection d'URL inopportune
+  // 1. Fermer toutes les fiches modales
   document.getElementById('speciesSheetOverlay').classList.remove('active');
   const taxonOverlay = document.getElementById('taxonSheetOverlay');
   if (taxonOverlay) taxonOverlay.classList.remove('active');
 
-  // 2. Ouvrir le Module 1 et basculer sur l'onglet Géographie 2D (index 1)
-  openModule('module1', false);
-  switchModuleTab('module1', 1, true);
+  // 2. S'assurer que le DOM du Module 1 est actif et que l'onglet Géographie 2D (index 1) est affiché
+  const homeScreen = document.getElementById('homeScreen');
+  if (homeScreen) homeScreen.classList.add('hidden');
+  
+  document.querySelectorAll('.app-module').forEach(m => m.classList.remove('active'));
+  document.getElementById('module1').classList.add('active');
 
-  // 3. Forcer la carte Leaflet à recalculer sa taille et zoomer sur le point
+  const module1 = document.getElementById('module1');
+  const tabs = module1.querySelectorAll('.tab-btn');
+  tabs.forEach((tab, idx) => tab.classList.toggle('active', idx === 1));
+  const views = module1.querySelectorAll('.module-view');
+  views.forEach((view, idx) => view.classList.toggle('active', idx === 1));
+
+  // 3. Initialiser la carte et centrer avec un délai pour garantir le rendu du DOM
   setTimeout(() => {
-    if (!geoMap) initGeoMapWorkspace();
+    initGeoMapWorkspace();
     geoMap.invalidateSize();
 
     const lat = sp.coordinates.lat;
     const lng = sp.coordinates.lng;
 
-    // Zoom maximal 18 pour forcer la séparation des points
     geoMap.setView([lat, lng], 18, { animate: true });
 
-    // Recherche et ouverture du marker correspondant
     if (clusterGroup) {
       let targetMarker = null;
       clusterGroup.eachLayer(layer => {
@@ -1287,9 +1293,8 @@ function locateSpeciesOnMap(sp) {
       }
     }
 
-    // Mise en avant directe dans la colonne de droite (première position avec halo cyan)
     syncGeoRightPane(sp);
-  }, 200);
+  }, 100);
 }
 
 // 8. MONOGRAPHIE STRUCTUREE SANS TEXTE CREUX
