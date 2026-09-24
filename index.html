@@ -222,15 +222,14 @@
 
       <div class="sheet-split-container">
         
-        <!-- VOLET GAUCHE (50%) : PHOTO PURE SANS AUCUN TEXTE DESSUS -->
+        <!-- VOLET GAUCHE (50%) : PHOTO PURE -->
         <div class="sheet-left-photo-pane">
           <img class="sheet-pure-photo" id="sheetHeroImg" src="" alt="" />
         </div>
 
-        <!-- VOLET DROIT (50%) : IDENTITÉ, ONGLETS ET INFORMATIONS DÉTAILLÉES -->
+        <!-- VOLET DROIT (50%) : IDENTITÉ, ONGLETS ET INFORMATIONS -->
         <div class="sheet-right-info-pane">
           
-          <!-- Bandeau Identité Supérieur -->
           <div class="sheet-header-identity">
             <div class="sheet-badges-row">
               <span class="sheet-rank-badge" id="sheetHeroRank">Espèce</span>
@@ -240,7 +239,6 @@
             <div class="sheet-title-vern" id="sheetHeroVern">Nom Français Normalisé</div>
           </div>
 
-          <!-- Onglets Tiroirs -->
           <div class="sheet-nav-tabs">
             <button class="sheet-tab-btn active" onclick="switchSheetTab(0)">📖 Monographie</button>
             <button class="sheet-tab-btn" onclick="switchSheetTab(1)">🌍 Répartition Mondiale</button>
@@ -249,7 +247,6 @@
             <button class="sheet-tab-btn" onclick="switchSheetTab(4)">🌿 Apparentés</button>
           </div>
 
-          <!-- Contenu des Tiroirs Défilant -->
           <div class="sheet-drawers-scroll">
             <!-- 0. Monographie -->
             <div class="sheet-drawer active" id="sheetDrawer-0">
@@ -296,7 +293,58 @@
     </div>
   </div>
 
-  <!-- MODALE MINI-MOSAÏQUE DES PHOTOS DE L'ESPÈCE -->
+  <!-- ========================================================
+       NOUVELLE SUPER-FICHE : RANG SUPÉRIEUR (FAMILLE / ORDRE / GENRE)
+       ======================================================== -->
+  <div class="species-sheet-overlay" id="taxonSheetOverlay">
+    <div class="species-sheet-modal">
+      
+      <button class="sheet-close-btn" onclick="closeTaxonSheet()" title="Fermer (Échap)">✕</button>
+
+      <div class="sheet-split-container">
+        
+        <!-- VOLET GAUCHE (50%) : PHOTO DE L'ESPÈCE REPRÉSENTATIVE DE CE RANG -->
+        <div class="sheet-left-photo-pane">
+          <img class="sheet-pure-photo" id="taxonHeroImg" src="" alt="" />
+          <div class="sheet-photo-credit-tag" id="taxonPhotoCredit">Spécimen représentatif</div>
+        </div>
+
+        <!-- VOLET DROIT (50%) : PRÉSENTATION DU RANG & MOSAÏQUE DES ESPÈCES -->
+        <div class="sheet-right-info-pane">
+          
+          <div class="sheet-header-identity">
+            <div class="sheet-badges-row">
+              <span class="sheet-rank-badge" id="taxonRankBadge">Famille</span>
+              <span class="sheet-rank-badge" style="color:var(--accent-emerald); border-color:var(--accent-emerald);" id="taxonStatsBadge">0 espèce</span>
+            </div>
+            <h1 class="sheet-title-sci" id="taxonTitleSci">Nom du Rang</h1>
+            <div class="sheet-title-vern" id="taxonTitleVern">Nom Français Normalisé</div>
+          </div>
+
+          <div class="sheet-drawers-scroll" style="display:flex; flex-direction:column; gap:1.25rem;">
+            
+            <div>
+              <div class="sheet-section-title">Caractères généraux & diagnose du groupe</div>
+              <div class="sheet-wiki-box" id="taxonWikiContent">
+                <span class="sheet-loading-spinner"></span> Consultation de la notice...
+              </div>
+            </div>
+
+            <div>
+              <div class="sheet-section-title" id="taxonSpeciesGridTitle">Toutes vos espèces répertoriées dans ce rang</div>
+              <div class="results-gallery-mode" id="taxonSpeciesGrid"></div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODALE MINI-MOSAÏQUE DES CLICHÉS DE L'ESPÈCE -->
   <div class="obs-photos-modal" id="obsPhotosModal">
     <div class="obs-photos-modal-card">
       <div class="obs-photos-modal-header">
