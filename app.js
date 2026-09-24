@@ -65,7 +65,28 @@ function isTrueSpecies(sp) {
   return parts.length >= 2 && !['Animalia', 'Plantae', 'Fungi', 'Arthropoda', 'Chordata', 'Insecta'].includes(parts[0]);
 }
 
-// Chargement des données
+// FABRICATION UNIVERSELLE D'UNE VIGNETTE DE MOSAÏQUE
+function createThumbCard(sp, metaText) {
+  const card = document.createElement('div');
+  card.className = 'thumb-card';
+  card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
+  const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
+
+  const metaHtml = metaText ? `<div class="thumb-meta">${metaText}</div>` : '';
+
+  card.innerHTML = `
+    <img class="thumb-img" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
+    <div class="thumb-gradient"></div>
+    <div class="thumb-body">
+      <span class="thumb-latin">${sp.scientific_name}</span>
+      <span class="thumb-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
+      ${metaHtml}
+    </div>
+  `;
+  return card;
+}
+
+// Chargement initial
 fetch('data.json')
   .then(res => res.json())
   .then(data => {
@@ -238,18 +259,12 @@ function renderExpertResultsDOM() {
   const slice = currentResultsList.slice(0, 100);
 
   if (resultsViewMode === 'gallery') {
-    const galleryDiv = document.createElement('div');
-    galleryDiv.className = 'results-gallery-mode';
-
+    container.className = 'thumbnail-grid';
     slice.forEach(sp => {
-      const card = createUniversalGalleryCard(sp);
-      galleryDiv.appendChild(card);
+      container.appendChild(createThumbCard(sp));
     });
-    container.appendChild(galleryDiv);
   } else {
-    const listDiv = document.createElement('div');
-    listDiv.className = 'results-list-mode';
-
+    container.className = 'results-list-wrap';
     slice.forEach(sp => {
       const row = document.createElement('div');
       row.className = 'species-row';
@@ -266,33 +281,11 @@ function renderExpertResultsDOM() {
         </div>
         <button class="btn-open-fiche">Fiche</button>
       `;
-      listDiv.appendChild(row);
+      container.appendChild(row);
     });
-    container.appendChild(listDiv);
   }
 
   container.scrollTop = 0;
-}
-
-// Générateur universel de carte galerie pour garantir 0 empilement
-function createUniversalGalleryCard(sp, extraMeta) {
-  const card = document.createElement('div');
-  card.className = 'gallery-card';
-  card.onclick = () => alert(`Super-Fiche bientôt active pour : ${sp.scientific_name}`);
-  const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
-
-  const metaHtml = extraMeta ? `<div class="gallery-meta">${extraMeta}</div>` : '';
-
-  card.innerHTML = `
-    <img class="gallery-photo" src="${thumb}" alt="${sp.scientific_name}" loading="lazy" />
-    <div class="gallery-overlay"></div>
-    <div class="gallery-text">
-      <span class="gallery-latin">${sp.scientific_name}</span>
-      <span class="gallery-vern">${sp.common_name || sp.taxonomy.genus || ''}</span>
-      ${metaHtml}
-    </div>
-  `;
-  return card;
 }
 
 document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
@@ -315,7 +308,7 @@ document.getElementById('expertTreeSearch').addEventListener('input', (e) => {
 });
 
 // ========================================================
-// 2. MODULE 1 - ONGLET 2 : GÉOGRAPHIE 2D (MOSAÏQUE BLINDÉE)
+// 2. MODULE 1 - ONGLET 2 : GÉOGRAPHIE 2D
 // ========================================================
 let geoMap = null;
 let clusterGroup = null;
@@ -449,7 +442,6 @@ function populateGeoMarkers() {
   syncGeoRightPane();
 }
 
-// CORRECTION MAJEURE : Mosaïque identique à l'onglet 1
 function syncGeoRightPane() {
   if (!geoMap || !globalSpeciesData) return;
   const bounds = geoMap.getBounds();
@@ -484,16 +476,10 @@ function syncGeoRightPane() {
   const container = document.getElementById('geoCardsContainer');
   container.innerHTML = '';
 
-  const galleryGrid = document.createElement('div');
-  galleryGrid.className = 'results-gallery-mode';
-
   const slice = visibleSpecies.slice(0, 80);
   slice.forEach(sp => {
-    const card = createUniversalGalleryCard(sp, sp.place ? sp.place.split(',')[0] : '');
-    galleryGrid.appendChild(card);
+    container.appendChild(createThumbCard(sp, sp.place ? sp.place.split(',')[0] : ''));
   });
-
-  container.appendChild(galleryGrid);
 }
 
 // ========================================================
@@ -709,19 +695,19 @@ function visualNavigateToSpecies(macroId, subId) {
 
   const container = document.getElementById('visualContentArea');
   container.innerHTML = '';
+
   const grid = document.createElement('div');
-  grid.className = 'results-gallery-mode';
+  grid.className = 'thumbnail-grid';
 
   matchingSpecies.slice(0, 120).forEach(sp => {
-    const card = createUniversalGalleryCard(sp);
-    grid.appendChild(card);
+    grid.appendChild(createThumbCard(sp));
   });
 
   container.appendChild(grid);
 }
 
 // ========================================================
-// 4. MODULE 2 - ONGLET 1 : OBSERVATIONS (CORRECTION SOLITAIRE)
+// 4. MODULE 2 - ONGLET 1 : OBSERVATIONS (MINIATURES DIRECTES)
 // ========================================================
 let obsFilteredData = [];
 let obsCurrentPage = 1;
@@ -799,24 +785,18 @@ function changeObsPage(delta) {
   document.getElementById('obsCardsGrid').scrollTop = 0;
 }
 
-// CORRECTION MAJEURE : Utilisation de la grille 'results-gallery-mode' et de 'createUniversalGalleryCard'
+// INJECTION DIRECTE DANS LA GRILLE SANS WRAPPER
 function renderObsCards() {
   const container = document.getElementById('obsCardsGrid');
   container.innerHTML = '';
-
-  const galleryGrid = document.createElement('div');
-  galleryGrid.className = 'results-gallery-mode';
 
   const start = (obsCurrentPage - 1) * obsPageSize;
   const slice = obsFilteredData.slice(start, start + obsPageSize);
 
   slice.forEach(sp => {
     const metaText = `${sp.place ? sp.place.split(',')[0] : 'Station'} • ${sp.last_observed || 'Non daté'}`;
-    const card = createUniversalGalleryCard(sp, metaText);
-    galleryGrid.appendChild(card);
+    container.appendChild(createThumbCard(sp, metaText));
   });
-
-  container.appendChild(galleryGrid);
 }
 
 // ========================================================
