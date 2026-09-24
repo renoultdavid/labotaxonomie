@@ -8,7 +8,7 @@ let currentOpenSpecies = null;
 let sheetWorldMap = null;
 let sheetWorldTileLayer = null;
 
-// IDENTIFIANT INATURALIST POUR VERROUILLER STRICTEMENT SUR TES CLICHÉS
+// IDENTIFIANT INATURALIST POUR VERROUILLER STRICTEMENT SUR VOS CLICHÉS
 const MY_INATURALIST_USERNAME = 'zanskar'; 
 
 const vernMap = {
@@ -50,6 +50,7 @@ const vernMap = {
   'Passeriformes': 'Passereaux',
   'Falconiformes': 'Faucons',
   'Accipitriformes': 'Rapaces diurnes',
+  'Anguilliformes': 'Anguilles, Murènes & Congres',
   'Carnivora': 'Carnivores',
   'Rodentia': 'Rongeurs',
   'Chiroptera': 'Chauves-souris',
@@ -93,10 +94,16 @@ function getTotalObservationsCount(list) {
   return list.reduce((acc, s) => acc + (parseInt(s.obs_count, 10) || 1), 0);
 }
 
-function createOriginalGalleryCard(sp, metaText, countBadge) {
+function createOriginalGalleryCard(sp, metaText, countBadge, customClickAction) {
   const card = document.createElement('div');
   card.className = 'gallery-card';
-  card.onclick = () => openSpeciesSheet(sp);
+  card.onclick = () => {
+    if (typeof customClickAction === 'function') {
+      customClickAction(sp);
+    } else {
+      openSpeciesSheet(sp);
+    }
+  };
   const thumb = sp.photo_url || 'https://via.placeholder.com/200x200/080c14/475569?text=?';
 
   const metaHtml = metaText ? `<span class="gallery-meta">${metaText}</span>` : '';
@@ -502,7 +509,6 @@ function populateGeoMarkers() {
     const marker = L.marker([sp.coordinates.lat, sp.coordinates.lng], { icon: customIcon });
     marker.speciesData = sp;
     
-    // Popup avec clic sur photo ou bouton pour retourner à la Super-Fiche
     marker.bindPopup(`
       <img class="geo-pop-img" src="${sp.photo_url || ''}" alt="" onclick='openSpeciesSheetFromId("${sp.id}")' title="Ouvrir la fiche de ${sp.scientific_name}" />
       <div class="geo-pop-body">
@@ -1142,7 +1148,6 @@ function openSpeciesSheet(sp) {
   iucnEl.className = `sheet-iucn-badge ${iucnData.class}`;
   iucnEl.innerText = iucnData.label;
 
-  // Si des coordonnées GPS existent : injecte le bouton de localisation directe
   if (sp.coordinates && sp.coordinates.lat && sp.coordinates.lng) {
     const locateBtn = document.createElement('button');
     locateBtn.id = 'headerLocateBtn';
@@ -1217,33 +1222,27 @@ function initOrUpdateWorldMap(sp) {
   }
 }
 
-// ========================================================
 // 7. TÉLÉPORTATION VERS LA CARTE 2D & CENTRAGE PRÉCIS
-// ========================================================
 function locateSpeciesOnMap(sp) {
   if (!sp || !sp.coordinates || !sp.coordinates.lat || !sp.coordinates.lng) {
     alert("Aucune coordonnée GPS enregistrée pour cette observation.");
     return;
   }
 
-  // 1. Fermer la fiche
   closeSpeciesSheet();
+  closeTaxonSheet();
 
-  // 2. Basculer sur le Module 1 et sur l'onglet Géographie 2D (index 1)
   openModule('module1', false);
   switchModuleTab('module1', 1, false);
 
-  // 3. Zoomer précisément sur l'emplacement et déployer la bulle
   setTimeout(() => {
     if (!geoMap) initGeoMapWorkspace();
 
     const lat = sp.coordinates.lat;
     const lng = sp.coordinates.lng;
 
-    // Centrage avec zoom précis de terrain (niveau 14)
     geoMap.setView([lat, lng], 14, { animate: true });
 
-    // Recherche et ouverture du marker correspondant
     if (clusterGroup) {
       clusterGroup.eachLayer(layer => {
         if (layer.speciesData && String(layer.speciesData.id) === String(sp.id)) {
@@ -1366,6 +1365,8 @@ function renderFieldLocalChapters(sp) {
     bioDetail = "Ce coléoptère prédateur est principalement aphidiphage (consommateur actif de pucerons et petits hémiptères). Les adultes fréquentent les herbacées ensoleillées, les lisières et les friches fleuries pour la chasse et la reproduction.";
   } else if (sp.taxonomy.order === 'Lepidoptera') {
     bioDetail = "Ce lépidoptère accomplit son cycle biologique en étroite association avec des plantes-hôtes spécifiques. Les imagos participent à la pollinisation et fréquentent les biotopes herbacés ou forestiers bien exposés.";
+  } else if (sp.taxonomy.order === 'Anguilliformes') {
+    bioDetail = "Ce poisson téléostéen au corps serpentiforme allongé est adapté aux fonds rocheux, aux anfractuosités ou aux herbiers marins où il mène une activité prédatrice souvent crépusculaire ou nocturne.";
   } else if (sp.taxonomy.kingdom === 'Fungi') {
     bioDetail = "Ce champignon développe son mycélium dans la litière ou le bois mort, jouant un rôle clé dans le recyclage de la matière organique et la symbiose mycorhizienne avec la strate arborée.";
   }
@@ -1531,7 +1532,7 @@ function populateRelatedSpecies(sp) {
 // ========================================================
 // 9. SUPER-FICHE DE RANG SUPÉRIEUR (FAMILLE / ORDRE / GENRE)
 // ========================================================
-function openTaxonSheet(rankKey, rankName) {
+window.openTaxonSheet = function(rankKey, rankName) {
   if (!globalSpeciesData || !rankName) return;
 
   const overlay = document.getElementById('taxonSheetOverlay');
@@ -1561,7 +1562,8 @@ function openTaxonSheet(rankKey, rankName) {
     'genus': 'Genre'
   };
 
-  document.getElementById('taxonRankBadge').innerText = rankLabels[rankKey] || 'Taxon';
+  const currentRankLabel = rankLabels[rankKey] || 'Taxon';
+  document.getElementById('taxonRankBadge').innerText = currentRankLabel;
   document.getElementById('taxonTitleSci').innerText = rankName;
   document.getElementById('taxonTitleVern').innerText = vernMap[rankName] ? `(${vernMap[rankName]})` : '';
 
@@ -1582,23 +1584,34 @@ function openTaxonSheet(rankKey, rankName) {
     }
   });
 
-  document.getElementById('taxonSpeciesGridTitle').innerText = `Toutes vos espèces de ${rankLabels[rankKey] || 'ce taxon'} (${matchingSpecies.length})`;
+  // Titre propre et élégant pour la grille
+  const genderPrefix = (currentRankLabel === 'Famille' || currentRankLabel === 'Classe') ? 'cette' : 'cet';
+  document.getElementById('taxonSpeciesGridTitle').innerText = `Toutes vos espèces de ${genderPrefix} ${currentRankLabel.toLowerCase()} (${matchingSpecies.length})`;
+  
   const grid = document.getElementById('taxonSpeciesGrid');
   grid.innerHTML = '';
 
+  // ACTION CRUCIALE : Le clic sur une vignette ferme la fiche du rang supérieur et ouvre la fiche espèce correspondante
   matchingSpecies.forEach(sp => {
-    grid.appendChild(createOriginalGalleryCard(sp));
+    const card = createOriginalGalleryCard(sp, '', null, (selectedSpecies) => {
+      closeTaxonSheet();
+      setTimeout(() => {
+        openSpeciesSheet(selectedSpecies);
+      }, 50);
+    });
+    grid.appendChild(card);
   });
 
   overlay.classList.add('active');
-}
+};
 
-function closeTaxonSheet() {
-  document.getElementById('taxonSheetOverlay').classList.remove('active');
-}
+window.closeTaxonSheet = function() {
+  const overlay = document.getElementById('taxonSheetOverlay');
+  if (overlay) overlay.classList.remove('active');
+};
 
 // ========================================================
-// 10. CLICHÉS PERSONNELS VERROUILLÉS SUR TON COMPTE INATURALIST "ZANSKAR"
+// 10. CLICHÉS PERSONNELS VERROUILLÉS SUR LE COMPTE INATURALIST "ZANSKAR"
 // ========================================================
 function openSpeciesPhotosModal(speciesId) {
   if (!globalSpeciesData) return;
@@ -1643,7 +1656,6 @@ function openSpeciesPhotosModal(speciesId) {
     });
   }
 
-  // 1. Cliché principal
   const myPhotosList = [];
   if (sp.photo_url) {
     myPhotosList.push({
@@ -1653,7 +1665,6 @@ function openSpeciesPhotosModal(speciesId) {
     });
   }
 
-  // 2. Recherche sur TOUTES les observations iNaturalist de ZANSKAR pour cette espèce
   if (sp.id && !isNaN(sp.id)) {
     const userFilter = MY_INATURALIST_USERNAME ? `&user_id=${encodeURIComponent(MY_INATURALIST_USERNAME)}` : '';
     fetch(`https://api.inaturalist.org/v1/observations?taxon_id=${sp.id}${userFilter}&per_page=30&photos=true`)
