@@ -5,23 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Observatoire du Vivant • Laboratoire Taxonomique</title>
   
-  <!-- Leaflet & MarkerCluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 </head>
 <body>
 
-  <!-- ACCUEIL : DOUBLE VOLET SPLIT 50/50 IMMERSIF -->
+  <!-- ACCUEIL -->
   <div id="homeScreen">
-    
-    <!-- Volet 1 : Recherche d'Espèce -->
     <div class="home-pane" id="pane1" onclick="openModule('module1')">
       <div class="pane-bg"></div>
       <div class="pane-overlay"></div>
@@ -29,19 +24,13 @@
         <div class="pane-num">Module 01</div>
         <div class="title-row">
           <h1 class="pane-title">Recherche d'Espèce</h1>
-          <div class="pulse-btn" title="Entrer">
-            <span class="pulse-icon">→</span>
-          </div>
+          <div class="pulse-btn" title="Entrer"><span class="pulse-icon">→</span></div>
         </div>
         <p class="pane-desc">Explorer le vivant par l'arbre taxonomique strict, la cartographie géographique 2D par zones ou la galerie visuelle intuitive.</p>
-        <div class="pane-cta">
-          <span>Ouvrir l'explorateur</span>
-          <span>→</span>
-        </div>
+        <div class="pane-cta"><span>Ouvrir l'explorateur</span><span>→</span></div>
       </div>
     </div>
 
-    <!-- Volet 2 : Observations & Statistiques -->
     <div class="home-pane" id="pane2" onclick="openModule('module2')">
       <div class="pane-bg"></div>
       <div class="pane-overlay"></div>
@@ -49,21 +38,15 @@
         <div class="pane-num">Module 02</div>
         <div class="title-row">
           <h1 class="pane-title">Observations & Statistiques</h1>
-          <div class="pulse-btn" title="Entrer">
-            <span class="pulse-icon">→</span>
-          </div>
+          <div class="pulse-btn" title="Entrer"><span class="pulse-icon">→</span></div>
         </div>
         <p class="pane-desc">Explorer les planches de terrain, trier les observations et analyser la biodiversité de la collection.</p>
-        <div class="pane-cta">
-          <span>Accéder aux données</span>
-          <span>→</span>
-        </div>
+        <div class="pane-cta"><span>Accéder aux données</span><span>→</span></div>
       </div>
     </div>
-
   </div>
 
-  <!-- MODULE 1 : RECHERCHE D'ESPÈCES (3 ONGLETS) -->
+  <!-- MODULE 1 -->
   <div class="app-module" id="module1">
     <div class="module-topbar">
       <div class="module-nav-left">
@@ -79,8 +62,7 @@
     </div>
 
     <div class="module-view-stack">
-      
-      <!-- Vue 1.1 : Recherche Expert Cladistique -->
+      <!-- 1.1 Expert -->
       <div class="module-view active" id="view1-0">
         <div class="expert-workspace">
           <div class="expert-tree-pane">
@@ -105,12 +87,12 @@
                 </div>
               </div>
             </div>
-            <div class="thumbnail-grid" id="expertResultsWrapper"></div>
+            <div class="results-content-wrap" id="expertResultsWrapper"></div>
           </div>
         </div>
       </div>
 
-      <!-- Vue 1.2 : Recherche Géographique 2D -->
+      <!-- 1.2 Géo 2D -->
       <div class="module-view" id="view1-1">
         <div class="geo-workspace">
           <div class="geo-header-controls">
@@ -142,13 +124,13 @@
                 <span id="geoVisibleTitle" style="color: var(--text-muted); font-weight: 600;">Espèces dans la zone visible</span>
                 <span id="geoVisibleCount" style="color: var(--accent-cyan); font-weight: 700; font-size: 0.75rem;">0 espèce</span>
               </div>
-              <div class="thumbnail-grid" id="geoCardsContainer"></div>
+              <div class="results-content-wrap" id="geoCardsContainer"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Vue 1.3 : Recherche Visuelle Intuitive -->
+      <!-- 1.3 Visuel -->
       <div class="module-view" id="view1-2">
         <div class="visual-workspace">
           <div class="visual-subbar">
@@ -160,11 +142,10 @@
           <div class="visual-content-scroll" id="visualContentArea"></div>
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- MODULE 2 : OBSERVATIONS & STATISTIQUES (2 ONGLETS) -->
+  <!-- MODULE 2 -->
   <div class="app-module" id="module2">
     <div class="module-topbar">
       <div class="module-nav-left">
@@ -179,11 +160,9 @@
     </div>
 
     <div class="module-view-stack">
-      
-      <!-- Vue 2.1 : Observations -->
+      <!-- 2.1 Observations -->
       <div class="module-view active" id="view2-0">
         <div class="obs-workspace">
-          
           <div class="obs-control-bar">
             <div class="obs-search-wrap">
               <input type="text" id="obsSearchInput" class="obs-search-field" placeholder="Filtrer (nom latin, nom vernaculaire, station)..." />
@@ -222,27 +201,14 @@
             </div>
           </div>
 
-          <!-- Grille de miniatures universelle -->
-          <div class="thumbnail-grid" id="obsCardsGrid"></div>
+          <div class="results-content-wrap" id="obsCardsGrid"></div>
         </div>
       </div>
 
-      <!-- Vue 2.2 : Tableau de bord analytique -->
+      <!-- 2.2 Statistiques -->
       <div class="module-view" id="view2-1">
         <div class="stats-dashboard-scroll" id="statsDashboardArea"></div>
       </div>
-
-    </div>
-  </div>
-
-  <!-- Pop-up Modale pour les détails statistiques -->
-  <div class="stats-modal" id="statsModal">
-    <div class="stats-modal-card">
-      <div class="stats-modal-header">
-        <div class="stats-modal-title" id="statsModalTitle">Détail</div>
-        <button class="stats-modal-close" onclick="closeStatsModal()">&times;</button>
-      </div>
-      <div class="stats-modal-body" id="statsModalBody"></div>
     </div>
   </div>
 
