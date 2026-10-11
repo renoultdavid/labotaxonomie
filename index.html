@@ -9,6 +9,51 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .btn-home-nature {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #e2e8f0;
+      text-decoration: none;
+      font-size: 0.95rem;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-home-nature:hover {
+      background: rgba(30, 41, 59, 0.95);
+      border-color: #38bdf8;
+      transform: scale(1.08);
+    }
+    .btn-fs-nature {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #e2e8f0;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+    }
+    .btn-fs-nature:hover {
+      background: rgba(30, 41, 59, 0.95);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+  </style>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -26,6 +71,10 @@
 
   <!-- ACCUEIL -->
   <div id="homeScreen">
+    <div style="position: absolute; top: 16px; right: 20px; z-index: 100; display: flex; gap: 10px; align-items: center;">
+      <a href="https://renoultdavid.github.io/accueil/" class="btn-home-nature" title="Accueil général">🏠</a>
+      <button onclick="toggleFullScreen()" class="btn-fs-nature" title="Plein écran">⛶ Plein écran</button>
+    </div>
     <div class="home-pane" id="pane1" onclick="openModule('module1')">
       <div class="pane-bg"></div>
       <div class="pane-overlay"></div>
@@ -58,7 +107,9 @@
   <!-- MODULE 1 -->
   <div class="app-module" id="module1">
     <div class="module-topbar">
-      <div class="module-nav-left">
+      <div class="module-nav-left" style="display: flex; align-items: center; gap: 8px;">
+        <a href="https://renoultdavid.github.io/accueil/" class="btn-home-nature" title="Accueil général">🏠</a>
+        <button onclick="toggleFullScreen()" class="btn-fs-nature" title="Plein écran">⛶ Plein écran</button>
         <button class="btn-back-home" onclick="backToHome()">← Accueil</button>
         <div class="module-title">Recherche d'Espèce</div>
       </div>
@@ -155,9 +206,12 @@
   </div>
 
   <!-- MODULE 2 -->
+  
   <div class="app-module" id="module2">
     <div class="module-topbar">
-      <div class="module-nav-left">
+      <div class="module-nav-left" style="display: flex; align-items: center; gap: 8px;">
+        <a href="https://renoultdavid.github.io/accueil/" class="btn-home-nature" title="Accueil général">🏠</a>
+        <button onclick="toggleFullScreen()" class="btn-fs-nature" title="Plein écran">⛶ Plein écran</button>
         <button class="btn-back-home" onclick="backToHome()">← Accueil</button>
         <div class="module-title">Observations & Statistiques</div>
       </div>
@@ -362,5 +416,19 @@
   </div>
 
   <script src="app.js"></script>
+  <script>
+    /* BASCULE PLEIN ÉCRAN */
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.warn("Plein écran non supporté ou bloqué :", err);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+  </script>
 </body>
 </html>
