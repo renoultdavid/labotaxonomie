@@ -174,7 +174,16 @@ window.addEventListener('popstate', () => {
 
 function openModule(moduleId, updateHash = true) {
   document.getElementById('homeScreen').classList.add('hidden');
+  document.querySelectorAll('.app-module').forEach(m => m.classList.remove('active'));
   document.getElementById(moduleId).classList.add('active');
+  const btnHub = document.getElementById('btn-back-hub');
+  if (btnHub) btnHub.hidden = false;
+  const sub = document.getElementById('insignia-subtitle');
+  if (sub) {
+    sub.textContent = moduleId === 'module1'
+      ? "Recherche d'Espèce & Taxonomie"
+      : "Observations & Statistiques";
+  }
   if (moduleId === 'module2') {
     initObservationsWorkspace();
   }
@@ -184,6 +193,10 @@ function openModule(moduleId, updateHash = true) {
 function backToHome() {
   document.querySelectorAll('.app-module').forEach(m => m.classList.remove('active'));
   document.getElementById('homeScreen').classList.remove('hidden');
+  const btnHub = document.getElementById('btn-back-hub');
+  if (btnHub) btnHub.hidden = true;
+  const sub = document.getElementById('insignia-subtitle');
+  if (sub) sub.textContent = "Portail & Laboratoire Taxonomique";
   updateURLHash(null);
 }
 
@@ -518,8 +531,8 @@ function populateGeoMarkers() {
       <div class="geo-pop-body">
         <div class="geo-pop-sci" style="cursor:pointer;" onclick='openSpeciesSheetFromId("${sp.id}")'>${sp.scientific_name}</div>
         <div class="geo-pop-vern">${sp.common_name || sp.taxonomy.family || ''}</div>
-        <div style="font-size:0.7rem; color:#94a3b8; margin-top:0.3rem;">${sp.place || 'Station de relevé'} • ${sp.last_observed || ''}</div>
-        <button style="margin-top:0.5rem; width:100%; padding:0.35rem 0.5rem; background:#38bdf8; border:none; border-radius:4px; font-weight:700; color:#03060a; cursor:pointer;" onclick='openSpeciesSheetFromId("${sp.id}")'>📖 Voir Fiche Espèce</button>
+        <div style="font-size:0.75rem; color:#8c95a6; margin-top:0.3rem;">${sp.place || 'Station de relevé'} • ${sp.last_observed || ''}</div>
+        <button style="margin-top:0.5rem; width:100%; padding:0.4rem 0.5rem; background:#d4af37; border:none; border-radius:3px; font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:#050608; cursor:pointer;" onclick='openSpeciesSheetFromId("${sp.id}")'>📖 Voir Fiche Espèce</button>
       </div>
     `);
 
@@ -1260,6 +1273,10 @@ function locateSpeciesOnMap(sp) {
   
   document.querySelectorAll('.app-module').forEach(m => m.classList.remove('active'));
   document.getElementById('module1').classList.add('active');
+  const btnHub = document.getElementById('btn-back-hub');
+  if (btnHub) btnHub.hidden = false;
+  const sub = document.getElementById('insignia-subtitle');
+  if (sub) sub.textContent = "Recherche d'Espèce & Taxonomie";
 
   const module1 = document.getElementById('module1');
   const tabs = module1.querySelectorAll('.tab-btn');

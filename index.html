@@ -13,56 +13,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Observatoire du Vivant • Laboratoire Taxonomique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="style.css" />
-  <style>
-    .btn-home-nature {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #e2e8f0;
-      text-decoration: none;
-      font-size: 0.95rem;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-    .btn-home-nature:hover {
-      background: rgba(30, 41, 59, 0.95);
-      border-color: #38bdf8;
-      transform: scale(1.08);
-    }
-    .btn-fs-nature {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 12px;
-      border-radius: 20px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #e2e8f0;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      transition: all 0.2s ease;
-    }
-    .btn-fs-nature:hover {
-      background: rgba(30, 41, 59, 0.95);
-      border-color: #38bdf8;
-      color: #38bdf8;
-    }
-  </style>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -78,37 +36,52 @@
 </head>
 <body>
 
-  <!-- ACCUEIL -->
-  <div id="homeScreen">
-    <div style="position: absolute; top: 16px; right: 20px; z-index: 100; display: flex; gap: 10px; align-items: center;">
-      <a href="https://renoultdavid.github.io/accueil/" class="btn-home-nature" title="Accueil général">🏠</a>
-      <button onclick="toggleFullScreen()" class="btn-fs-nature" title="Plein écran">⛶ Plein écran</button>
+  <!-- BARRE DE COMMANDE FIXE (48px) -->
+  <header id="main-header">
+    <div class="museum-insignia">
+      <!-- BOUTON 1 : RETOUR AU PORTAIL PRINCIPAL DU SITE -->
+      <a href="../accueil/index.html" class="btn-header-nav" title="Accueil général du site">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span>Portail</span>
+      </a>
+
+      <!-- BOUTON 2 : RETOUR AU HUB (LES DEUX VOLETS) -->
+      <button id="btn-back-hub" class="btn-header-nav" onclick="backToHome()" title="Retour au menu des deux volets" hidden>
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"></rect><rect x="14" y="3" width="7" height="18" rx="1"></rect></svg>
+        <span>Hub</span>
+      </button>
+
+      <span class="insignia-title">Observatoire du Vivant</span>
+      <span class="insignia-sub" id="insignia-subtitle">Portail &amp; Laboratoire Taxonomique</span>
     </div>
+
+    <div class="header-right-controls">
+      <button id="btn-fullscreen-toggle" class="btn-header-fullscreen" onclick="toggleFullScreen()" title="Basculer en mode plein écran">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        <span>Plein Écran</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ACCUEIL (DOUBLE VOLET) -->
+  <div id="homeScreen">
     <div class="home-pane" id="pane1" onclick="openModule('module1')">
       <div class="pane-bg"></div>
-      <div class="pane-overlay"></div>
       <div class="pane-content">
-        <div class="pane-num">Module 01</div>
-        <div class="title-row">
-          <h1 class="pane-title">Recherche d'Espèce</h1>
-          <div class="pulse-btn" title="Entrer"><span class="pulse-icon">→</span></div>
-        </div>
+        <span class="pane-num">MODULE 01</span>
+        <h1 class="pane-title">Recherche d'Espèce</h1>
         <p class="pane-desc">Explorer le vivant par l'arbre taxonomique strict, la cartographie géographique 2D par zones ou la galerie visuelle intuitive.</p>
-        <div class="pane-cta"><span>Ouvrir l'explorateur</span><span>→</span></div>
+        <div class="pane-cta">Ouvrir l'explorateur <span>→</span></div>
       </div>
     </div>
 
     <div class="home-pane" id="pane2" onclick="openModule('module2')">
       <div class="pane-bg"></div>
-      <div class="pane-overlay"></div>
       <div class="pane-content">
-        <div class="pane-num">Module 02</div>
-        <div class="title-row">
-          <h1 class="pane-title">Observations & Statistiques</h1>
-          <div class="pulse-btn" title="Entrer"><span class="pulse-icon">→</span></div>
-        </div>
+        <span class="pane-num">MODULE 02</span>
+        <h1 class="pane-title">Observations &amp; Statistiques</h1>
         <p class="pane-desc">Explorer les planches de terrain, trier les observations et analyser la biodiversité de la collection.</p>
-        <div class="pane-cta"><span>Accéder aux données</span><span>→</span></div>
+        <div class="pane-cta">Accéder aux données <span>→</span></div>
       </div>
     </div>
   </div>
@@ -116,10 +89,8 @@
   <!-- MODULE 1 -->
   <div class="app-module" id="module1">
     <div class="module-topbar">
-      <div class="module-nav-left" style="display: flex; align-items: center; gap: 8px;">
-        <a href="https://renoultdavid.github.io/accueil/" class="btn-home-nature" title="Accueil général">🏠</a>
-        <button onclick="toggleFullScreen()" class="btn-fs-nature" title="Plein écran">⛶ Plein écran</button>
-        <button class="btn-back-home" onclick="backToHome()">← Accueil</button>
+      <div class="module-nav-left" style="display: flex; align-items: center; gap: 12px;">
+        <button class="btn-back-home" onclick="backToHome()">← Hub</button>
         <div class="module-title">Recherche d'Espèce</div>
       </div>
 
@@ -218,16 +189,14 @@
   
   <div class="app-module" id="module2">
     <div class="module-topbar">
-      <div class="module-nav-left" style="display: flex; align-items: center; gap: 8px;">
-        <a href="https://renoultdavid.github.io/accueil/" class="btn-home-nature" title="Accueil général">🏠</a>
-        <button onclick="toggleFullScreen()" class="btn-fs-nature" title="Plein écran">⛶ Plein écran</button>
-        <button class="btn-back-home" onclick="backToHome()">← Accueil</button>
-        <div class="module-title">Observations & Statistiques</div>
+      <div class="module-nav-left" style="display: flex; align-items: center; gap: 12px;">
+        <button class="btn-back-home" onclick="backToHome()">← Hub</button>
+        <div class="module-title">Observations &amp; Statistiques</div>
       </div>
 
       <div class="module-tabs">
         <button class="tab-btn active" onclick="switchModuleTab('module2', 0)">Planches d'Observations</button>
-        <button class="tab-btn" onclick="switchModuleTab('module2', 1)">Observatoire & Phénologie</button>
+        <button class="tab-btn" onclick="switchModuleTab('module2', 1)">Observatoire &amp; Phénologie</button>
       </div>
     </div>
 
